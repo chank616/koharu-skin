@@ -1,0 +1,19 @@
+# 上游参考副本独立维护，不提交到本项目。
+/work/references/
+
+# 编译产物和运行时数据。
+/bin/
+/server
+/server.exe
+/data/
+/plugins/
+*.log
+
+# 本地配置和编辑器文件。
+/AGENTS.md
+.env
+.env.*
+!.env.example
+/configs/config.local.yaml
+.idea/
+.vscode/
