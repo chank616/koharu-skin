@@ -1,3 +1,6 @@
 spring:
   application:
     name: koharu-skin
+  threads:
+    virtual:
+      enabled: true

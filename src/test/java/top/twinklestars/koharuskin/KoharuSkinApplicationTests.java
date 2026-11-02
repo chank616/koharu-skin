@@ -1,4 +1,4 @@
-package top.twinklestars.top.koharuskin;
+package top.twinklestars.koharuskin;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

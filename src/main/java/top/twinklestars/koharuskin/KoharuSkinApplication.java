@@ -1,4 +1,4 @@
-package top.twinklestars.top.koharuskin;
+package top.twinklestars.koharuskin;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
