@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/assets :: head('管理后台')}"></head>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<head th:replace="~{fragments/assets :: head(${translations.text('general.admin-panel')})}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
-        <a th:href="@{/admin/users}" class="nav-link">用户管理</a><a th:href="@{/admin/players}" class="nav-link">角色管理</a>
-        <a th:href="@{/admin/reports}" class="nav-link">举报审核</a><a th:href="@{/admin/options}" class="nav-link">站点设置</a>
-        <a th:href="@{/admin/score}" class="nav-link">积分设置</a><a th:href="@{/admin/extensions}" class="nav-link">官方扩展</a>
-        <a th:href="@{/admin/status}" class="nav-link">运行状态</a>
-        <a th:href="@{/admin/customize}" class="nav-link">外观设置</a>
-        <a th:href="@{/admin/resource}" class="nav-link">资源设置</a>
-        <a th:href="@{/admin/i18n}" class="nav-link">自定义翻译</a>
+        <a th:href="@{/admin/users}" class="nav-link" th:text="${translations.text('general.user-manage')}">用户管理</a><a th:href="@{/admin/players}" class="nav-link" th:text="${translations.text('general.player-manage')}">角色管理</a>
+        <a th:href="@{/admin/reports}" class="nav-link" th:text="${translations.text('general.report-manage')}">举报审核</a><a th:href="@{/admin/options}" class="nav-link" th:text="${translations.text('general.options')}">站点设置</a>
+        <a th:href="@{/admin/score}" class="nav-link" th:text="${translations.text('general.score-options')}">积分设置</a><a th:href="@{/admin/extensions}" class="nav-link" th:text="${translations.text('koharu.extensions.title')}">官方扩展</a>
+        <a th:href="@{/admin/status}" class="nav-link" th:text="${translations.text('general.status')}">运行状态</a>
+        <a th:href="@{/admin/customize}" class="nav-link" th:text="${translations.text('general.customize')}">外观设置</a>
+        <a th:href="@{/admin/resource}" class="nav-link" th:text="${translations.text('general.res-options')}">资源设置</a>
+        <a th:href="@{/admin/i18n}" class="nav-link" th:text="${translations.text('general.i18n')}">自定义翻译</a>
         <th:block th:replace="~{fragments/notifications :: bell}"></th:block>
-        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto" th:text="${translations.text('general.logout')}">退出登录</button>
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
-        <h1 class="h3 mb-3">管理后台</h1>
+        <h1 class="h3 mb-3" th:text="${translations.text('general.admin-panel')}">管理后台</h1>
         <div class="row">
             <div class="col-md-3"><div class="small-box bg-info"><div class="inner"><h3 th:text="${sum.users}"></h3><p>用户总数</p></div><a th:href="@{/admin/users}" class="small-box-footer">用户管理 <i class="fas fa-arrow-circle-right"></i></a></div></div>
             <div class="col-md-3"><div class="small-box bg-green"><div class="inner"><h3 th:text="${sum.players}"></h3><p>角色总数</p></div><a th:href="@{/admin/players}" class="small-box-footer">角色管理 <i class="fas fa-arrow-circle-right"></i></a></div></div>

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/assets :: head('个人资料')}"></head>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<head th:replace="~{fragments/assets :: head(${translations.text('general.profile')})}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a class="navbar-brand" th:href="@{/user}" th:text="${siteName}"></a>
-        <a class="nav-link" th:href="@{/user}">用户中心</a><a class="nav-link" th:href="@{/user/player}">角色管理</a>
-        <a class="nav-link" th:href="@{/user/closet}">我的衣柜</a><a class="nav-link" th:href="@{/skinlib}">皮肤库</a>
-        <span id="toggle-dark-mode" class="ml-auto mr-3"></span><th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary">退出登录</button>
+        <a class="nav-link" th:href="@{/user}" th:text="${translations.text('general.user-center')}">用户中心</a><a class="nav-link" th:href="@{/user/player}" th:text="${translations.text('general.player-manage')}">角色管理</a>
+        <a class="nav-link" th:href="@{/user/closet}" th:text="${translations.text('general.my-closet')}">我的衣柜</a><a class="nav-link" th:href="@{/skinlib}" th:text="${translations.text('general.skinlib')}">皮肤库</a>
+        <span id="toggle-dark-mode" class="ml-auto mr-3"></span><th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary" th:text="${translations.text('general.logout')}">退出登录</button>
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <h1 class="h3 mb-3">个人资料 · <span data-mark="nickname" th:text="${profile.nickname}"></span></h1>
@@ -27,7 +27,7 @@
         </div><div class="col-md-6">
             <form id="change-nickname" class="card card-primary" method="post">
                 <div class="card-header"><h2 class="card-title">更改昵称</h2></div><div class="card-body">
-                    <p th:if="${singlePlayer}">昵称与角色名保持一致，请在<a th:href="@{/user/player}">角色管理</a>中更改。</p>
+                    <p th:if="${singlePlayer}">昵称与角色名保持一致，请在<a th:href="@{/user/player}" th:text="${translations.text('general.player-manage')}">角色管理</a>中更改。</p>
                     <label for="nickname">昵称</label><input id="nickname" name="nickname" class="form-control" required maxlength="50" th:value="${profile.nickname}" th:disabled="${singlePlayer}">
                 </div><div class="card-footer"><button type="submit" class="btn btn-primary" th:disabled="${singlePlayer}">更新昵称</button></div>
             </form>

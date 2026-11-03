@@ -1,0 +1,18 @@
+auth:
+  bind-introduction: Use your email to sign in and reset your password. Your existing players and textures will be kept.
+  verify-instruction: Enter the email address that received this verification message.
+  henan-login: Sign in with Henan university authentication
+  henan-register: Register with Henan university authentication
+home:
+  title: Give your character its own look
+  players: Manage your game characters and choose their skins and capes.
+  sharing-title: Collect and share
+  sharing: Browse the skin library, add textures to your closet, and share them with friends.
+  game-title: Use in Minecraft
+  game: Use external authentication or CustomSkinLoader so other players can see your skin.
+  introduction: ':sitename hosts Minecraft skins and capes for uploading, collecting, and sharing.'
+  frontend-credit: Frontend based on
+extensions:
+  title: Official Extensions
+union:
+  title: Federated Authentication

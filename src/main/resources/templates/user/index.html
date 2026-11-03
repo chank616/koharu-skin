@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/assets :: head('用户中心')}"></head>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<head th:replace="~{fragments/assets :: head(${translations.text('general.user-center')})}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}">
         <div class="container">
             <a class="navbar-brand" th:href="@{/user}" th:text="${siteName}">Koharu Skin</a>
-            <a class="nav-link" th:href="@{/user/player}">角色管理</a>
-            <a class="nav-link" th:href="@{/user/closet}">我的衣柜</a>
-            <a class="nav-link" th:href="@{/skinlib}">皮肤库</a>
-            <a class="nav-link" th:href="@{/user/profile}">个人资料</a>
-            <a class="nav-link" th:href="@{/user/reports}">我的举报</a>
-            <a class="nav-link" th:href="@{/user/oauth/manage}">OAuth 应用</a>
-            <a class="nav-link" th:if="${unionEnabled}" th:href="@{/union}">联合认证</a>
-            <a class="nav-link" th:if="${admin}" th:href="@{/admin}">管理后台</a>
-            <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" type="button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+            <a class="nav-link" th:href="@{/user/player}" th:text="${translations.text('general.player-manage')}">角色管理</a>
+            <a class="nav-link" th:href="@{/user/closet}" th:text="${translations.text('general.my-closet')}">我的衣柜</a>
+            <a class="nav-link" th:href="@{/skinlib}" th:text="${translations.text('general.skinlib')}">皮肤库</a>
+            <a class="nav-link" th:href="@{/user/profile}" th:text="${translations.text('general.profile')}">个人资料</a>
+            <a class="nav-link" th:href="@{/user/reports}" th:text="${translations.text('general.my-reports')}">我的举报</a>
+            <a class="nav-link" th:href="@{/user/oauth/manage}" th:text="${translations.text('general.oauth-manage')}">OAuth 应用</a>
+            <a class="nav-link" th:if="${unionEnabled}" th:href="@{/union}" th:text="${translations.text('koharu.union.title')}">联合认证</a>
+            <a class="nav-link" th:if="${admin}" th:href="@{/admin}" th:text="${translations.text('general.admin-panel')}">管理后台</a>
+            <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" type="button" class="btn btn-outline-secondary ml-auto" th:text="${translations.text('general.logout')}">退出登录</button>
         </div>
     </nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">

@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/assets :: head('运行状态')}"></head>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<head th:replace="~{fragments/assets :: head(${translations.text('general.status')})}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
-        <a th:href="@{/admin}" class="nav-link">后台首页</a><a th:href="@{/admin/users}" class="nav-link">用户管理</a>
-        <a th:href="@{/admin/options}" class="nav-link">站点设置</a><a th:href="@{/admin/extensions}" class="nav-link">官方扩展</a>
+        <a th:href="@{/admin}" class="nav-link" th:text="${translations.text('general.admin-panel')}">后台首页</a><a th:href="@{/admin/users}" class="nav-link" th:text="${translations.text('general.user-manage')}">用户管理</a>
+        <a th:href="@{/admin/options}" class="nav-link" th:text="${translations.text('general.options')}">站点设置</a><a th:href="@{/admin/extensions}" class="nav-link" th:text="${translations.text('koharu.extensions.title')}">官方扩展</a>
         <th:block th:replace="~{fragments/notifications :: bell}"></th:block>
-        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto" th:text="${translations.text('general.logout')}">退出登录</button>
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
-        <h1 class="h3 mb-3">运行状态</h1>
+        <h1 class="h3 mb-3" th:text="${translations.text('general.status')}">运行状态</h1>
         <div class="row"><div class="col-lg-8"><div class="card card-info">
             <div class="card-header"><h2 class="card-title">环境信息</h2></div>
             <div class="card-body table-responsive"><table class="table table-striped table-bordered">

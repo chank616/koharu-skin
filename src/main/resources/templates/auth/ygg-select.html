@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
 <head th:replace="~{fragments/assets :: head('选择游戏角色')}"></head>
 <body class="hold-transition login-page" th:classappend="${darkMode} ? 'dark-mode'">
 <main class="login-box"><div class="card"><div class="card-body">

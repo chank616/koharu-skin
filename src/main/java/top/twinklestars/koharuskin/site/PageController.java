@@ -101,7 +101,8 @@ public class PageController {
     }
 
     @org.springframework.web.bind.annotation.ModelAttribute
-    public void appearance(Model model, @AuthenticationPrincipal AccountUser user) {
+    public void appearance(Model model, @AuthenticationPrincipal AccountUser user,HttpServletRequest request) {
+        model.addAttribute("translations",translations);
         model.addAttribute("darkMode", user != null && profiles.find(user.uid()).isDarkMode());
         model.addAttribute("notifications",user==null?null:notifications.unreadJson(user.uid()));
         model.addAttribute("xiqueerEnabled",user!=null&&extensions.enabled("xiqueer-verification"));
@@ -110,6 +111,12 @@ public class PageController {
         model.addAttribute("unionEnabled",extensions.enabled("yggdrasil-connect"));
         model.addAttribute("favicon",presentation.favicon());
         model.addAttribute("siteAssets",presentation.assets());
+        var languageLinks=new java.util.LinkedHashMap<String,String>();
+        SiteLocale.LANGUAGES.forEach((locale,label)->languageLinks.put(locale,
+                org.springframework.web.util.UriComponentsBuilder.fromUriString(request.getRequestURI()).query(request.getQueryString())
+                        .replaceQueryParam("lang",locale).build(true).toUriString()));
+        model.addAttribute("languageLinks",languageLinks);
+        model.addAttribute("languages",SiteLocale.LANGUAGES);
     }
 
     @GetMapping({"/union","/union/"})
@@ -482,7 +489,7 @@ public class PageController {
     @GetMapping("/auth/forgot")
     public String forgot(Model model) {
         page(model, "auth/forgot", Map.of("recaptcha", captcha.siteKey(), "invisible", options.enabled("recaptcha_invisible",false)));
-        model.addAttribute("title", "找回密码");
+        model.addAttribute("title", translations.text("auth.forgot.title"));
         return "auth/form";
     }
 
@@ -490,7 +497,7 @@ public class PageController {
     public String reset(Model model, @PathVariable long uid, @RequestParam long expires, @RequestParam String signature) {
         mail.validate(uid, "reset", expires, signature);
         page(model, "auth/reset/" + uid, Map.of());
-        model.addAttribute("title", "重置密码");
+        model.addAttribute("title", translations.text("auth.reset.title"));
         return "auth/form";
     }
 

@@ -1,32 +1,32 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
 <head th:replace="~{fragments/assets :: head(${siteName})}"></head>
 <body class="hold-transition layout-top-nav">
 <div class="hp-wrapper">
     <img class="home-background" th:classappend="${home.fixed}?'fixed'" th:src="${home.picture}" alt="">
     <nav class="navbar navbar-expand fixed-top ml-0" th:classappend="${home.navbar+(home.transparent?' transparent':'')}">
         <div class="container"><a class="navbar-brand" th:href="@{/}" th:text="${siteName}"></a>
-            <ul class="navbar-nav ml-auto"><li class="nav-item"><a class="nav-link" th:href="@{/skinlib}">皮肤库</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="${loggedIn?'/user':'/auth/login'}" th:text="${loggedIn?'用户中心':'登录'}"></a></li></ul>
+            <ul class="navbar-nav ml-auto"><li class="nav-item"><a class="nav-link" th:href="@{/skinlib}" th:text="${translations.text('general.skinlib')}">皮肤库</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="${loggedIn?'/user':'/auth/login'}" th:text="${translations.text(loggedIn?'general.user-center':'general.login')}"></a></li></ul>
         </div>
     </nav>
     <div class="container"><div class="splash"><h1 class="splash-head" th:text="${siteName}"></h1>
         <p class="splash-subhead" th:text="${siteDescription}"></p>
-        <p><a class="main-button" th:href="${loggedIn?'/user':'/auth/register'}" th:text="${loggedIn?'用户中心':'立即注册'}"></a></p>
+        <p><a class="main-button" th:href="${loggedIn?'/user':'/auth/register'}" th:text="${translations.text(loggedIn?'general.user-center':'general.register')}"></a></p>
     </div></div>
 </div>
 <th:block th:unless="${home.hideIntro}">
-    <section id="intro"><div class="container text-center"><h2 class="mb-5">让角色拥有自己的样子</h2><div class="row">
-        <div class="col-lg"><i class="fas fa-users mb-3" aria-hidden="true"></i><h3>角色管理</h3><p>管理游戏角色，为角色搭配皮肤与披风。</p></div>
-        <div class="col-lg"><i class="fas fa-share-alt mb-3" aria-hidden="true"></i><h3>收藏与分享</h3><p>浏览皮肤库，将喜欢的材质加入衣柜，与好友分享。</p></div>
-        <div class="col-lg"><i class="fas fa-gamepad mb-3" aria-hidden="true"></i><h3>游戏内使用</h3><p>通过外置登录或 CustomSkinLoader，让其他玩家看到你的皮肤。</p></div>
+    <section id="intro"><div class="container text-center"><h2 class="mb-5" th:text="${translations.text('koharu.home.title')}">让角色拥有自己的样子</h2><div class="row">
+        <div class="col-lg"><i class="fas fa-users mb-3" aria-hidden="true"></i><h3 th:text="${translations.text('general.player-manage')}">角色管理</h3><p th:text="${translations.text('koharu.home.players')}">管理游戏角色，为角色搭配皮肤与披风。</p></div>
+        <div class="col-lg"><i class="fas fa-share-alt mb-3" aria-hidden="true"></i><h3 th:text="${translations.text('koharu.home.sharing-title')}">收藏与分享</h3><p th:text="${translations.text('koharu.home.sharing')}">浏览皮肤库，将喜欢的材质加入衣柜，与好友分享。</p></div>
+        <div class="col-lg"><i class="fas fa-gamepad mb-3" aria-hidden="true"></i><h3 th:text="${translations.text('koharu.home.game-title')}">游戏内使用</h3><p th:text="${translations.text('koharu.home.game')}">通过外置登录或 CustomSkinLoader，让其他玩家看到你的皮肤。</p></div>
     </div></div></section>
-    <section id="footer-wrap"><div class="container"><div class="row align-items-center"><p class="col-lg-9 mb-4 mb-lg-0"><span th:text="${siteName}"></span> 提供 Minecraft 皮肤和披风的上传、托管与分享服务。</p>
-        <div class="col-lg-3"><a class="main-button" th:href="${loggedIn?'/user':'/auth/register'}">开始使用</a></div>
+    <section id="footer-wrap"><div class="container"><div class="row align-items-center"><p class="col-lg-9 mb-4 mb-lg-0"><span th:text="${translations.text('koharu.home.introduction', {'sitename':siteName})}"></span></p>
+        <div class="col-lg-3"><a class="main-button" th:href="${loggedIn?'/user':'/auth/register'}" th:text="${translations.text('index.start')}">开始使用</a></div>
     </div></div></section>
 </th:block>
 <footer id="copyright" th:class="${home.hideIntro?'without-intro':'with-intro'}"><div class="container">
-    <div th:utext="${home.copyright}"></div><div><span th:text="${home.powered}"></span> <a href="https://github.com/chank616/koharu-skin">Koharu Skin</a> · 前端源自 <a href="https://github.com/bs-community/blessing-skin-server">Blessing Skin</a></div>
+    <div th:utext="${home.copyright}"></div><div><span th:text="${home.powered}"></span> <a href="https://github.com/chank616/koharu-skin">Koharu Skin</a> · <span th:text="${translations.text('koharu.home.frontend-credit')}"></span> <a href="https://github.com/bs-community/blessing-skin-server">Blessing Skin</a></div>
 </div></footer>
 <th:block th:replace="~{fragments/assets :: scripts}"></th:block>
 </body></html>

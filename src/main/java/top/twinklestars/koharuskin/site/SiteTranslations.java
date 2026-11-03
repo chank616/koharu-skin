@@ -25,7 +25,10 @@ public class SiteTranslations {
     }
     @SuppressWarnings("unchecked")
     public Map<String,Object> group(String name) {
-        String locale=SiteLocale.current();
+        return group(name,SiteLocale.current());
+    }
+    @SuppressWarnings("unchecked")
+    private Map<String,Object> group(String name,String locale) {
         var base=bundled.getOrDefault(locale+"/"+name,bundled.getOrDefault("en/"+name,Map.of()));
         Map<String,Object> result=json.convertValue(base,Map.class);
         for(var line:lines.group(name)) {
@@ -47,9 +50,17 @@ public class SiteTranslations {
     }
     public String text(String key) {
         int split=key.indexOf('.');
-        Object value=group(key.substring(0,split));
-        for(String segment:key.substring(split+1).split("\\.",-1)) value=value instanceof Map<?,?> map?map.get(segment):null;
-        return value instanceof String text?text:key;
+        for(String locale:List.of(SiteLocale.current(),"en")) {
+            Object value=group(key.substring(0,split),locale);
+            for(String segment:key.substring(split+1).split("\\.",-1)) value=value instanceof Map<?,?> map?map.get(segment):null;
+            if(value instanceof String text) return text;
+        }
+        return key;
+    }
+    public String text(String key,Map<String,?> parameters) {
+        String text=text(key);
+        for(var entry:parameters.entrySet()) text=text.replace(":"+entry.getKey(),String.valueOf(entry.getValue()));
+        return text;
     }
     public Map<String,Object> page(int page) {
         int current=Math.max(1,page);long total=lines.count();

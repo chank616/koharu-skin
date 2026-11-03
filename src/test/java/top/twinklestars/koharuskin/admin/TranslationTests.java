@@ -103,6 +103,31 @@ class TranslationTests {
         mvc.perform(get("/admin/i18n/list").param("page","2").with(user(admin))).andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].key").value("entry10")).andExpect(jsonPath("$.last_page").value(2));
     }
+
+    @Test void publicPagesUseSelectedLanguageAndCustomTitlesStayEscaped() throws Exception {
+        for(var page:Map.of("/auth/login","Log In","/auth/register","Register","/auth/forgot","Forgot Password").entrySet()) {
+            var body=mvc.perform(get(page.getKey()).param("lang","en")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            var document=org.jsoup.Jsoup.parse(body);
+            assertThat(document.title()).startsWith(page.getValue()+" - ");
+            assertThat(document.selectFirst("html").attr("lang")).isEqualTo("en");
+            assertThat(document.select("nav[aria-label=Language] a")).hasSize(5);
+        }
+        jdbc.update("INSERT INTO language_lines(`group`,`key`,text) VALUES('auth','login.title',?)","{\"en\":\"<script>Custom login</script>\"}");
+        var body=mvc.perform(get("/auth/login").cookie(new Cookie("locale","en"))).andReturn().getResponse().getContentAsString();
+        assertThat(org.jsoup.Jsoup.parse(body).title()).startsWith("<script>Custom login</script> - ");
+        assertThat(body).doesNotContain("<script>Custom login</script>");
+        mvc.perform(get("/").param("lang","en")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Give your character its own look")));
+        var userPage=mvc.perform(get("/user").with(user(admin)).param("lang","en")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(org.jsoup.Jsoup.parse(userPage).selectFirst("a[href='/user/player']").text()).isEqualTo("Players");
+    }
+
+    @Test void languageLinksPreserveEncodedQueriesAndReplaceExistingLanguage() throws Exception {
+        var result=mvc.perform(get(java.net.URI.create("/auth/login?return=%2Fuser%3Ftab%3Dskins&value=a%2Bb&lang=zh_CN"))).andExpect(status().isOk()).andReturn();
+        var links=(Map<?,?>)result.getModelAndView().getModel().get("languageLinks");
+        assertThat(links.get("en")).isEqualTo("/auth/login?return=%2Fuser%3Ftab%3Dskins&value=a%2Bb&lang=en");
+        mvc.perform(get(java.net.URI.create(links.get("en").toString()))).andExpect(status().isOk()).andExpect(cookie().value("locale","en"));
+    }
     @SuppressWarnings("unchecked")
     private Map<String,Object> blessing(String locale) throws Exception {
         return (Map<String,Object>)mvc.perform(get("/auth/login").param("lang",locale)).andExpect(status().isOk()).andReturn().getModelAndView().getModel().get("blessing");

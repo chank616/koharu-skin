@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
 <head th:replace="~{fragments/assets :: head('喜鹊儿认证')}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
-        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a><a th:href="@{/user}" class="nav-link">用户中心</a>
-        <a th:href="@{/user/profile}" class="nav-link">个人资料</a><th:block th:replace="~{fragments/notifications :: bell}"></th:block>
-        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a><a th:href="@{/user}" class="nav-link" th:text="${translations.text('general.user-center')}">用户中心</a>
+        <a th:href="@{/user/profile}" class="nav-link" th:text="${translations.text('general.profile')}">个人资料</a><th:block th:replace="~{fragments/notifications :: bell}"></th:block>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto" th:text="${translations.text('general.logout')}">退出登录</button>
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <div class="row justify-content-center"><div class="col-lg-7 col-xl-6"><div class="card card-primary card-outline">

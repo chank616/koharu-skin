@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/assets :: head('OAuth 应用管理')}"></head>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<head th:replace="~{fragments/assets :: head(${translations.text('general.oauth-manage')})}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
-        <a th:href="@{/user}" class="nav-link">用户中心</a><a th:href="@{/skinlib}" class="nav-link">皮肤库</a>
-        <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+        <a th:href="@{/user}" class="nav-link" th:text="${translations.text('general.user-center')}">用户中心</a><a th:href="@{/skinlib}" class="nav-link" th:text="${translations.text('general.skinlib')}">皮肤库</a>
+        <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto" th:text="${translations.text('general.logout')}">退出登录</button>
     </div></nav>
-    <div class="content-wrapper"><div class="content-header"><div class="container-fluid"><h1 class="h3">OAuth 应用管理</h1></div></div>
+    <div class="content-wrapper"><div class="content-header"><div class="container-fluid"><h1 class="h3" th:text="${translations.text('general.oauth-manage')}">OAuth 应用管理</h1></div></div>
         <section class="content"><div class="container-fluid"></div></section>
     </div>
 </div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>

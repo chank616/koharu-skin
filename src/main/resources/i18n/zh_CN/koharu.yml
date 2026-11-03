@@ -1,0 +1,18 @@
+auth:
+  bind-introduction: 绑定后可使用邮箱登录和找回密码，原有角色与材质会保留。
+  verify-instruction: 输入收到此验证邮件的邮箱地址。
+  henan-login: 河南高校统一认证登录
+  henan-register: 河南高校统一认证注册
+home:
+  title: 让角色拥有自己的样子
+  players: 管理游戏角色，为角色搭配皮肤与披风。
+  sharing-title: 收藏与分享
+  sharing: 浏览皮肤库，将喜欢的材质加入衣柜，与好友分享。
+  game-title: 游戏内使用
+  game: 通过外置登录或 CustomSkinLoader，让其他玩家看到你的皮肤。
+  introduction: ':sitename 提供 Minecraft 皮肤和披风的上传、托管与分享服务。'
+  frontend-credit: 前端源自
+extensions:
+  title: 官方扩展
+union:
+  title: 联合认证

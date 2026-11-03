@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
 <head th:replace="~{fragments/assets :: head(${title})}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
-        <a th:href="@{/skinlib}" class="nav-link">皮肤库</a><a th:href="@{/user/closet}" class="nav-link">我的衣柜</a>
-        <a th:href="@{/user}" class="nav-link">用户中心</a><th:block th:replace="~{fragments/notifications :: bell}"></th:block>
+        <a th:href="@{/skinlib}" class="nav-link" th:text="${translations.text('general.skinlib')}">皮肤库</a><a th:href="@{/user/closet}" class="nav-link" th:text="${translations.text('general.my-closet')}">我的衣柜</a>
+        <a th:href="@{/user}" class="nav-link" th:text="${translations.text('general.user-center')}">用户中心</a><th:block th:replace="~{fragments/notifications :: bell}"></th:block>
     </div></nav>
     <div class="content-wrapper">
         <section th:if="${section != 'library'}" class="content pt-4"><div class="container">

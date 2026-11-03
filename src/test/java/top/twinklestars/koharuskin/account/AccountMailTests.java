@@ -101,6 +101,19 @@ class AccountMailTests {
         assertThatThrownBy(() -> mail.validate(uid,"reset",link.expires(),link.signature())).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 
+    @Test void switchingLanguageKeepsResetLinkSignatureValid() throws Exception {
+        mail.forgot("mail@example.invalid","language-"+uid);
+        var link=received();
+        var result=mvc.perform(get(link.pathAndQuery())).andExpect(status().isOk()).andReturn();
+        var links=(Map<?,?>)result.getModelAndView().getModel().get("languageLinks");
+        String english=links.get("en").toString();
+        assertThat(english).contains("expires="+link.expires(),"signature="+link.signature(),"lang=en");
+        mvc.perform(get(english)).andExpect(status().isOk()).andExpect(model().attribute("title","Reset Password"));
+        mvc.perform(post(english).with(csrf()).contentType("application/json").content("{\"password\":\"translated-reset\"}"))
+                .andExpect(jsonPath("$.code").value(0));
+        assertThat(new BCryptPasswordEncoder().matches("translated-reset",accounts.findById(uid).password())).isTrue();
+    }
+
     @Test void forgotRequiresCaptchaAndRateLimitsDelivery() throws Exception {
         var session = new MockHttpSession();
         mvc.perform(post("/auth/forgot").session(session).with(csrf()).contentType("application/json").content("{\"email\":\"mail@example.invalid\"}"))

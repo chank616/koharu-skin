@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
 <head th:replace="~{fragments/assets :: head('短信安全验证')}"></head>
 <body class="hold-transition login-page"><div class="login-box">
     <div class="login-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>

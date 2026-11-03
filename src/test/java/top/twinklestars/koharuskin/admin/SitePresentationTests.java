@@ -35,10 +35,10 @@ class SitePresentationTests {
         options.insert("site_name","Base title"); options.insert("site_name_zh_CN","<b>测试皮肤站</b>");
         options.insert("site_description_zh_CN","已有中文介绍"); options.insert("home_pic_url","./app/bg.webp");
         var guest=mvc.perform(get("/")).andExpect(status().isOk()).andExpect(view().name("home")).andReturn().getResponse().getContentAsString();
-        assertThat(guest).contains("&lt;b&gt;测试皮肤站&lt;/b&gt;","已有中文介绍","/official/site/bg.webp","/app/home.css","/app/home.js","立即注册","id=\"intro\"")
+        assertThat(guest).contains("&lt;b&gt;测试皮肤站&lt;/b&gt;","已有中文介绍","/official/site/bg.webp","/app/home.css","/app/home.js","现在注册","id=\"intro\"")
                 .doesNotContain("<b>测试皮肤站</b>","/official/hitokoto.js");
         var logged=mvc.perform(get("/").with(user(member))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(logged).contains("用户中心").doesNotContain("立即注册");
+        assertThat(logged).contains("用户中心").doesNotContain("现在注册");
         mvc.perform(get("/official/site/bg.webp")).andExpect(status().isOk()).andExpect(content().contentType("image/webp"));
     }
     @Test void adminCanSaveHomepageSettingsAndInvalidStyleDoesNotPartiallySave() throws Exception {

@@ -15,10 +15,13 @@
     <link rel="stylesheet" th:if="${blessing.route=='/'}" th:href="${siteAssets.cdn+'/app/home.css'}" crossorigin="anonymous">
     <link rel="stylesheet" th:if="${siteAssets.css}" th:href="@{/official/site/custom.css}">
     <script th:inline="javascript">window.blessing = /*[[${blessing}]]*/ {};</script>
-    <script th:if="${extra.containsKey('recaptcha') and extra.recaptcha != ''}" src="https://www.recaptcha.net/recaptcha/api.js?render=explicit&amp;hl=zh-CN" async defer></script>
+    <script th:if="${extra.containsKey('recaptcha') and extra.recaptcha != ''}" th:src="${'https://www.recaptcha.net/recaptcha/api.js?render=explicit&amp;hl='+#locale.toLanguageTag()}" async defer></script>
 </head>
 <body>
 <th:block th:fragment="scripts">
+    <nav class="text-center py-3" aria-label="Language">
+        <a th:each="language : ${languages}" class="small mx-2" th:href="${languageLinks[language.key]}" th:hreflang="${#strings.replace(language.key,'_','-')}" th:lang="${#strings.replace(language.key,'_','-')}" th:attr="aria-current=${language.key==blessing.locale?'true':null}" th:text="${language.value}"></a>
+    </nav>
     <script th:inline="javascript">
         const extra = /*[[${extra}]]*/ {};
         const data = document.createElement('script');

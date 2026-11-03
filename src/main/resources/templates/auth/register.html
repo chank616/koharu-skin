@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/assets :: head('注册')}"></head>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<head th:replace="~{fragments/assets :: head(${translations.text('auth.register.title')})}"></head>
 <body class="hold-transition register-page">
 <div class="register-box">
     <div class="register-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
-    <div class="card"><div class="card-body register-card-body"><main></main><a th:if="${henanEnabled}" th:href="@{/auth/register/henan}" class="d-block mt-2">河南高校统一认证注册</a></div></div>
+    <div class="card"><div class="card-body register-card-body"><main></main><a th:if="${henanEnabled}" th:href="@{/auth/register/henan}" class="d-block mt-2" th:text="${translations.text('koharu.auth.henan-register')}"></a></div></div>
 </div>
 <th:block th:replace="~{fragments/assets :: scripts}"></th:block>
 </body>
