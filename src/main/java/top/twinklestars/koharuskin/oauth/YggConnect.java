@@ -114,11 +114,15 @@ public class YggConnect {
         if(authorization==null||authorization.getAccessToken()==null||!authorization.getAccessToken().isActive())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         var scopes=authorization.getAccessToken().getToken().getScopes();
+        return userInfo(user,scopes,authorization.getAttribute("koharu.ygg.selected"));
+    }
+    public Map<String,Object> userInfo(AccountUser user,Set<String> scopes,String selected) {
+        requireEnabled();
         var result=new LinkedHashMap<String,Object>(); result.put("sub",Long.toString(user.uid()));
         if(scopes.contains("profile")) { result.put("nickname",user.nickname()); result.put("picture",root+"/avatar/user/"+user.uid()); }
         if(scopes.contains("email")) { result.put("email",user.email()); result.put("email_verified",accounts.verified(user.uid())); }
         if(scopes.contains(OAuthScopes.SELECT)) {
-            String uuid=authorization.getAttribute("koharu.ygg.selected");
+            String uuid=selected;
             var player=uuid==null?null:ygg.profile(uuid);
             if(player==null||player.uid()!=user.uid()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"所选角色已失效");
             result.put("selectedProfile",Map.of("id",uuid,"name",player.name()));

@@ -17,14 +17,16 @@ public class PlayerService {
     private final SiteOptions options;
     private final OfficialExtensions extensions;
     private final top.twinklestars.koharuskin.yggdrasil.UnionPlayerSync union;
+    private final top.twinklestars.koharuskin.oauth.JanusMapper janus;
 
     public PlayerService(PlayerMapper players, PlayerNames names, SiteOptions options, OfficialExtensions extensions,
-                         top.twinklestars.koharuskin.yggdrasil.UnionPlayerSync union) {
+                         top.twinklestars.koharuskin.yggdrasil.UnionPlayerSync union,top.twinklestars.koharuskin.oauth.JanusMapper janus) {
         this.players = players;
         this.names = names;
         this.options = options;
         this.extensions = extensions;
         this.union = union;
+        this.janus = janus;
     }
 
     public void requireVerified(long uid) {
@@ -83,6 +85,7 @@ public class PlayerService {
         if (!player.name().equalsIgnoreCase(name)) players.deleteUuid(name);
         players.renameUuid(player.name(), name);
         players.rename(pid, name);
+        janus.renamed(uuid(name),System.currentTimeMillis());
         syncUnion("PUT",name);
         if (extensions.enabled("single-player-limit")) players.nickname(uid, name);
         return players.find(pid);

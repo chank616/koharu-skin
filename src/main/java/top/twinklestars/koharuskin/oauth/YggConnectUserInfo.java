@@ -12,6 +12,7 @@ public class YggConnectUserInfo {
     public YggConnectUserInfo(YggConnect connect) { this.connect=connect; }
     @GetMapping("/yggc/userinfo")
     public Map<String,Object> info(@AuthenticationPrincipal AccountUser user,Authentication authentication) {
+        if(authentication.getDetails() instanceof JanusTokens.Access token) return connect.userInfo(user,token.scopes(),token.selected());
         return connect.userInfo(user,(String)authentication.getDetails());
     }
 }

@@ -30,14 +30,17 @@ public class AccountMailService {
     private final String from;
     private final byte[] key;
     private final java.time.Clock clock;
+    private final top.twinklestars.koharuskin.oauth.JanusMapper janus;
     private final ConcurrentHashMap<String, Long> cooldowns = new ConcurrentHashMap<>();
 
     public AccountMailService(AccountMapper accounts, SiteOptions options, PasswordEncoder passwords,
                               ObjectProvider<JavaMailSender> mail, @Value("${koharu.public-url}") String publicUrl,
-                              @Value("${koharu.mail-from}") String from, @Value("${koharu.remember-key}") String key, java.time.Clock clock) {
+                              @Value("${koharu.mail-from}") String from, @Value("${koharu.remember-key}") String key, java.time.Clock clock,
+                              top.twinklestars.koharuskin.oauth.JanusMapper janus) {
         this.accounts = accounts; this.options = options; this.passwords = passwords; this.mail = mail;
         this.publicUrl = publicUrl.replaceAll("/+$", ""); this.from = from; this.key = key.getBytes(StandardCharsets.UTF_8);
         this.clock = clock;
+        this.janus=janus;
     }
 
     public boolean available() { return mail.getIfAvailable() != null; }
@@ -100,6 +103,7 @@ public class AccountMailService {
         var user = accounts.lockById(uid);
         validate(user, "reset", expires, signature);
         accounts.password(uid, passwords.encode(password));
+        janus.revokeUser(uid);
     }
 
     @Transactional

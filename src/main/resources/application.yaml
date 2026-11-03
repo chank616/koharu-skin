@@ -41,6 +41,7 @@ mybatis:
     map-underscore-to-camel-case: true
 
 koharu:
+  oauth-public-key: ${OAUTH_PUBLIC_KEY:}
   skin-api-tokens: ${SKIN_API_TOKENS:}
   remember-key: ${REMEMBER_KEY}
   public-url: ${PUBLIC_URL:http://localhost:8080}

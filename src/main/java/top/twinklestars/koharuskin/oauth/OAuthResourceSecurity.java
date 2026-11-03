@@ -20,7 +20,7 @@ import java.util.*;
 @Configuration
 public class OAuthResourceSecurity {
     @Bean @Order(4)
-    SecurityFilterChain oauthResources(HttpSecurity http,OAuthAuthorizations authorizations,AccountMapper users) throws Exception {
+    SecurityFilterChain oauthResources(HttpSecurity http,OAuthAuthorizations authorizations,AccountMapper users,JanusTokens janus) throws Exception {
         http.securityMatcher(request->request.getRequestURI().equals(request.getContextPath()+"/yggc/userinfo")||(request.getRequestURI().startsWith(request.getContextPath()+"/api/")
                         &&!request.getRequestURI().startsWith(request.getContextPath()+top.twinklestars.koharuskin.yggdrasil.UnionOAuth.ROOT)
                         &&!Set.of(request.getContextPath()+"/api/",request.getContextPath()+"/api/site").contains(request.getRequestURI())
@@ -29,6 +29,13 @@ public class OAuthResourceSecurity {
                 .requestCache(cache->cache.disable()).csrf(csrf->csrf.disable())
                 .oauth2ResourceServer(server->server.opaqueToken(opaque->opaque.introspector(value->{
                     var authorization=authorizations.findByToken(value,OAuth2TokenType.ACCESS_TOKEN);
+                    if(authorization==null&&value.contains(".")) {
+                        var external=janus.read(value);
+                        var authorities=new ArrayList<org.springframework.security.core.GrantedAuthority>(external.user().getAuthorities());
+                        external.scopes().forEach(scope->authorities.add(new SimpleGrantedAuthority("SCOPE_"+scope)));
+                        return new DefaultOAuth2AuthenticatedPrincipal(Long.toString(external.user().uid()),
+                                Map.of("account",external.user(),"sub",Long.toString(external.user().uid()),"authorizationId",external),authorities);
+                    }
                     if(authorization==null||authorization.getAccessToken()==null||!authorization.getAccessToken().isActive()
                             ||authorization.getAttribute("koharu.uid")==null) throw new BadOpaqueTokenException("令牌已失效");
                     var user=users.findById(Long.parseLong(authorization.getAttribute("koharu.uid")));

@@ -18,13 +18,15 @@ public class AdminUsersService {
     private final SiteOptions options;
     private final PasswordEncoder passwords;
     private final top.twinklestars.koharuskin.player.PlayerService players;
+    private final top.twinklestars.koharuskin.oauth.JanusMapper janus;
 
     public AdminUsersService(AccountMapper accounts, ProfileMapper profiles, AdminUsersMapper users,
                              SiteOptions options, PasswordEncoder passwords,
-                             top.twinklestars.koharuskin.player.PlayerService players) {
+                             top.twinklestars.koharuskin.player.PlayerService players,top.twinklestars.koharuskin.oauth.JanusMapper janus) {
         this.accounts=accounts; this.profiles=profiles; this.users=users;
         this.options=options; this.passwords=passwords;
         this.players=players;
+        this.janus=janus;
     }
 
     private AccountUser authorize(long actorUid, long targetUid) {
@@ -42,6 +44,7 @@ public class AdminUsersService {
         if (users.emailUsed(uid,email)>0) throw new BusinessException("此邮箱已被使用");
         // 管理员代改邮箱保留原验证状态，与原后台保持一致。
         users.email(uid,email);
+        janus.revokeUser(uid);
     }
     public void verification(long actor, long uid) {
         authorize(actor,uid);
@@ -54,6 +57,7 @@ public class AdminUsersService {
     public void password(long actor, long uid, String password) {
         authorize(actor,uid);
         accounts.password(uid,passwords.encode(password));
+        janus.revokeUser(uid);
     }
     public void score(long actor, long uid, int score) {
         authorize(actor,uid);

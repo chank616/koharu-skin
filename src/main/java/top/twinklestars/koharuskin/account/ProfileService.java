@@ -14,13 +14,15 @@ public class ProfileService {
     private final OfficialExtensions extensions;
     private final SiteOptions options;
     private final top.twinklestars.koharuskin.player.PlayerService players;
+    private final top.twinklestars.koharuskin.oauth.JanusMapper janus;
 
     public ProfileService(AccountMapper accounts, ProfileMapper profiles, PasswordEncoder passwords,
                           OfficialExtensions extensions, SiteOptions options,
-                          top.twinklestars.koharuskin.player.PlayerService players) {
+                          top.twinklestars.koharuskin.player.PlayerService players,top.twinklestars.koharuskin.oauth.JanusMapper janus) {
         this.accounts=accounts; this.profiles=profiles; this.passwords=passwords;
         this.extensions=extensions; this.options=options;
         this.players=players;
+        this.janus=janus;
     }
 
     @Transactional
@@ -34,6 +36,7 @@ public class ProfileService {
     public void password(long uid, String current, String replacement) {
         checkPassword(accounts.lockById(uid), current);
         accounts.password(uid, passwords.encode(replacement));
+        janus.revokeUser(uid);
     }
 
     @Transactional
@@ -44,6 +47,7 @@ public class ProfileService {
         extensions.checkEmail(email);
         if (accounts.findByEmail(email) != null) throw new BusinessException("此邮箱已被使用");
         profiles.email(uid, email);
+        janus.revokeUser(uid);
     }
 
     @Transactional
@@ -52,6 +56,7 @@ public class ProfileService {
         if (!accounts.lockById(uid).email().isEmpty()) throw new BusinessException("账号已绑定邮箱，请在个人资料中更改");
         if (accounts.findByEmail(email) != null) throw new BusinessException("此邮箱已被使用");
         accounts.bindEmail(uid, email);
+        janus.revokeUser(uid);
     }
 
     @Transactional

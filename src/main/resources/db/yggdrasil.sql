@@ -23,3 +23,7 @@ CREATE TABLE IF NOT EXISTS koharu_union_nonces (
     expires_at BIGINT NOT NULL,
     INDEX union_nonces_expiry (expires_at)
 );
+CREATE TABLE IF NOT EXISTS koharu_player_renames (
+    uuid VARCHAR(36) PRIMARY KEY,
+    changed_at BIGINT NOT NULL
+);
