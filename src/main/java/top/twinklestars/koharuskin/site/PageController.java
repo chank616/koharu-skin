@@ -87,9 +87,9 @@ public class PageController {
 
     @GetMapping("/admin/{section:options|score}")
     public String settings(Model model,@PathVariable String section) {
-        page(model,"admin/"+section,Map.of());
-        model.addAttribute("title",section.equals("options")?"站点设置":"积分设置");
-        model.addAttribute("section",section);
+        page(model,"admin/"+(section.equals("extensions")?"extensions/config":section),Map.of());
+        model.addAttribute("title",switch(section){case "options"->"站点设置";case "score"->"积分设置";default->"官方扩展配置";});
+        model.addAttribute("section",section.equals("extensions")?"extensions/config":section);
         model.addAttribute("groups",settings.groups(section));
         model.addAttribute("values",settings.values(section));
         return "admin/settings";
@@ -107,8 +107,22 @@ public class PageController {
             model.addAttribute("values",entered);
             return view;
         }
-        return "redirect:/admin/"+section+"?saved";
+        return "redirect:/admin/"+(section.equals("extensions")?"extensions/config":section)+"?saved";
     }
+
+    @GetMapping("/admin/extensions")
+    public String extensionList(Model model) {
+        page(model,"admin/extensions",Map.of()); model.addAttribute("title","官方扩展");
+        return "admin/management";
+    }
+    @GetMapping("/admin/extensions/config")
+    public String extensionConfig(Model model) { return settings(model,"extensions"); }
+    @PostMapping("/admin/extensions/config")
+    public String saveExtensionConfig(Model model,@RequestParam String option,@RequestParam Map<String,String> values) {
+        return saveSettings(model,"extensions",option,values);
+    }
+    @GetMapping("/admin/plugins/manage")
+    public String legacyExtensions() { return "redirect:/admin/extensions"; }
 
     @GetMapping("/auth/register")
     public String register(Model model, @AuthenticationPrincipal AccountUser user) {

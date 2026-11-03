@@ -13,10 +13,24 @@ public class AdminSettings {
     public record Field(String key,String label,String type,String fallback) {}
     public record Group(String key,String title,List<Field> fields) {}
     private final SiteOptions options;
-    public AdminSettings(SiteOptions options) { this.options=options; }
+    private final tools.jackson.databind.json.JsonMapper json;
+    public AdminSettings(SiteOptions options,tools.jackson.databind.json.JsonMapper json) { this.options=options; this.json=json; }
 
     public List<Group> groups(String page) {
         return switch(page) {
+            case "extensions" -> List.of(
+                    new Group("yggdrasil-api","外置登录",List.of(
+                            new Field("ygg_uuid_algorithm","新角色 UUID 算法（已有 UUID 保留）","uuid","v4"),
+                            new Field("ygg_token_expire_1","登录令牌有效期（秒）","number","259200"),
+                            new Field("ygg_token_expire_2","登录令牌可刷新期限（秒）","number","604800"),
+                            new Field("ygg_tokens_limit","每个账号保留的登录令牌数","number","10"),
+                            new Field("ygg_rate_limit","同一账号登录间隔（毫秒）","number","1000"),
+                            new Field("ygg_skin_domain","额外材质域名（逗号分隔）","text",""),
+                            new Field("ygg_search_profile_max","一次查询角色数量上限","number","5"),
+                            new Field("ygg_show_config_section","在用户中心显示外置登录地址","checkbox","true"))),
+                    new Group("restricted-email-domains","邮箱域名限制",List.of(
+                            new Field("restricted-email-domains.allow","允许的域名（每行一个，留空允许所有域名）","textarea","[]"),
+                            new Field("restricted-email-domains.deny","禁止的域名（每行一个，优先于允许名单）","textarea","[]"))));
             case "options" -> List.of(new Group("general","基础设置",List.of(
                     new Field("site_name","站点名称","text","Koharu Skin"),
                     new Field("site_description","站点介绍","text","Minecraft 皮肤站"),
@@ -61,6 +75,7 @@ public class AdminSettings {
         var values=new LinkedHashMap<String,String>();
         for(var group:groups(page)) for(var field:group.fields()) {
             String value=options.text(field.key(),field.fallback());
+            if(field.key().startsWith("restricted-email-domains.")) value=String.join("\n",json.readTree(value).valueStream().map(item->item.asString()).toList());
             if(field.type().equals("number")) value=switch(value){case "true"->"1";case "false"->"0";default->value;};
             values.put(field.key(),value);
         }
@@ -105,6 +120,15 @@ public class AdminSettings {
             if(Integer.parseInt(values.get("sign_gap_time"))<1) throw new BusinessException("签到间隔至少为 1 小时");
             values.remove("sign_score_from"); values.remove("sign_score_to"); values.put("sign_score",min+","+max);
         }
+        if(groupKey.equals("yggdrasil-api")) {
+            if(!Set.of("v3","v4").contains(values.get("ygg_uuid_algorithm"))) throw new BusinessException("UUID 算法无效");
+            int valid=Integer.parseInt(values.get("ygg_token_expire_1")),refresh=Integer.parseInt(values.get("ygg_token_expire_2"));
+            if(valid<1||refresh<valid) throw new BusinessException("可刷新期限不能短于有效期，且有效期必须大于零");
+            if(Integer.parseInt(values.get("ygg_tokens_limit"))<1||Integer.parseInt(values.get("ygg_search_profile_max"))<1)
+                throw new BusinessException("令牌数和角色查询上限必须大于零");
+        }
+        if(groupKey.equals("restricted-email-domains")) values.replaceAll((key,value)->json.writeValueAsString(
+                value.lines().map(String::trim).filter(line->!line.isEmpty()).map(line->line.toLowerCase(Locale.ROOT)).distinct().toList()));
         options.lockRegistration();
         values.forEach((key,value)-> { if(options.get(key)==null) options.insert(key,value); else options.update(key,value); });
     }

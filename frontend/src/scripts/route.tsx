@@ -72,13 +72,8 @@ export default [
     el: '#table',
   },
   {
-    path: 'admin/plugins/manage',
-    react: () => import('../views/admin/PluginsManagement'),
-    el: '.content > .container-fluid',
-  },
-  {
-    path: 'admin/plugins/market',
-    react: () => import('../views/admin/PluginsMarket'),
+    path: 'admin/extensions',
+    react: () => import('../views/admin/OfficialExtensions'),
     el: '.content > .container-fluid',
   },
   {
