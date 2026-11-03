@@ -13,7 +13,11 @@ import java.util.List;
 public class YggSecurity {
     @Bean @Order(0)
     SecurityFilterChain unionMemberSecurity(HttpSecurity http) throws Exception {
-        return http.securityMatcher("/api/union/member", "/api/union/member/**")
+        return http.securityMatcher(request->{
+                    String path=request.getRequestURI().substring(request.getContextPath().length());
+                    return (path.equals("/api/union/member")||path.startsWith("/api/union/member/"))
+                            &&!(path.equals(UnionOAuth.ROOT)||path.startsWith(UnionOAuth.ROOT+"/"));
+                })
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(cache->cache.disable()).csrf(csrf->csrf.disable())
                 .authorizeHttpRequests(auth->auth.anyRequest().permitAll()).build();

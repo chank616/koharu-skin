@@ -76,9 +76,12 @@ public class UnionMember {
     }
     public Map<String,Object> hello() {
         requireEnabled();
+        var features=new ArrayList<String>();
+        if(options.enabled("require_verification",false)) features.add("emailVerification");
+        if(options.enabled("union_enable_oauth2",false)) features.add("unionOAuth2");
         return Map.of("yggdrasilApiVersion","0.0.1","serverListVersion",options.text("union_server_list_version","0"),
                 "privateKeyVersion",options.text("union_private_key_version","0"),
-                "enabledFeatures",options.enabled("require_verification",false)?List.of("emailVerification"):List.of());
+                "enabledFeatures",features);
     }
     @Transactional public void updateList() {
         var response=request("GET","/serverlist",null);

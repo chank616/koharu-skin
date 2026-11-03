@@ -35,7 +35,8 @@ public class AdminSettings {
             case "extensions" -> List.of(
                     new Group("union","联合认证",List.of(
                             new Field("union_api_root","联盟 API 根地址","text",""),
-                            new Field("union_member_key","成员密钥（留空保留现有密钥）","password",""))),
+                            new Field("union_member_key","成员密钥（留空保留现有密钥）","password",""),
+                            new Field("union_enable_oauth2","启用联盟授权（向联盟提供用户 ID、昵称及邮箱）","checkbox","false"))),
                     new Group("skin-api-extension","皮肤 API 扩展",List.of(
                             new Field("skin_api_tokens","API 令牌（至少 16 字符，多个用逗号分隔；留空保留现有令牌）","password",""))),
                     new Group("yggdrasil-api","外置登录",List.of(

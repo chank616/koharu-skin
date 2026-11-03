@@ -55,9 +55,10 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository contexts,
                                             HttpSessionCsrfTokenRepository csrf, JsonRememberMeServices remember,
-                                            @Value("${koharu.remember-key}") String key, AccountMapper users) throws Exception {
+                                            @Value("${koharu.remember-key}") String key, AccountMapper users,top.twinklestars.koharuskin.site.SiteOptions options) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/bind").authenticated()
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/union/member/oauth2","/api/union/member/oauth2/").permitAll()
                 .requestMatchers("/", "/auth/**", "/app/**", "/api", "/api/", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/**", "/avatar/**", "/*.json", "/csl/*.json", "/official/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.HEAD, "/*.json", "/csl/*.json", "/official/**").permitAll()
@@ -68,7 +69,17 @@ public class SecurityConfiguration {
                 .addFilterBefore(new AccountSessionFilter(users, contexts, key), org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .csrf(config -> config.csrfTokenRepository(csrf).ignoringRequestMatchers("/api","/api/"))
                 .rememberMe(config -> config.key(key).rememberMeServices(remember))
+                .cors(cors->cors.configurationSource(request->{
+                    if(!request.getRequestURI().startsWith(request.getContextPath()+top.twinklestars.koharuskin.yggdrasil.UnionOAuth.ROOT)) return null;
+                    var config=new org.springframework.web.cors.CorsConfiguration();
+                    var uri=java.net.URI.create(options.text("union_api_root",""));
+                    if(uri.getHost()!=null) config.setAllowedOrigins(List.of(uri.getScheme()+"://"+uri.getRawAuthority()));
+                    config.setAllowCredentials(true); config.setAllowedMethods(List.of("GET","OPTIONS"));
+                    config.setAllowedHeaders(List.of("Content-Type")); return config;
+                }))
                 .exceptionHandling(config -> config.authenticationEntryPoint((request, response, error) -> {
+                    if(request.getMethod().equals("GET")&&request.getRequestURI().equals(request.getContextPath()+top.twinklestars.koharuskin.yggdrasil.UnionOAuth.ROOT+"/grant"))
+                        request.getSession().setAttribute("oauth.returnTo",request.getRequestURI()+(request.getQueryString()==null?"":"?"+request.getQueryString()));
                     if (request.getHeader("Accept") != null && request.getHeader("Accept").contains("application/json")) {
                         response.setStatus(401);
                         response.setContentType("application/json;charset=UTF-8");
