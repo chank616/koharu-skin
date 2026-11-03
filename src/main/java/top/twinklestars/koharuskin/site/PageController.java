@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.yaml.snakeyaml.Yaml;
 import top.twinklestars.koharuskin.account.AccountUser;
 import top.twinklestars.koharuskin.account.LoginAttempts;
+import top.twinklestars.koharuskin.player.PlayerMapper;
+import top.twinklestars.koharuskin.player.PlayerService;
 
 import java.io.IOException;
 import java.util.Map;
@@ -18,10 +20,14 @@ public class PageController {
     private final LoginAttempts attempts;
     private final Map<String, Object> translations;
     private final SiteOptions options;
+    private final PlayerMapper players;
+    private final PlayerService playerService;
 
-    public PageController(LoginAttempts attempts, SiteOptions options) throws IOException {
+    public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService) throws IOException {
         this.attempts = attempts;
         this.options = options;
+        this.players = players;
+        this.playerService = playerService;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -58,5 +64,14 @@ public class PageController {
         model.addAttribute("blessing", Map.of("base_url", "", "route", route, "site_name", "Koharu Skin",
                 "locale", "zh_CN", "version", "0.0.1", "debug", false, "env", "production", "i18n", translations));
         model.addAttribute("extra", extra);
+    }
+
+    @GetMapping("/user/player")
+    public String players(Model model, @AuthenticationPrincipal AccountUser user) {
+        playerService.requireVerified(user.uid());
+        page(model, "user/player", Map.of("count", players.list(user.uid()).size(), "score", players.score(user.uid()),
+                "cost", options.number("score_per_player", 100), "rule", "命名规则：" + options.text("player_name_rule", "official"),
+                "length", "长度：" + options.number("player_name_length_min", 3) + "～" + options.number("player_name_length_max", 16)));
+        return "user/players";
     }
 }
