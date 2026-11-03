@@ -37,13 +37,14 @@ class Captcha extends React.Component<Record<string, unknown>, State> {
           resolve(value)
           off()
         })
-        recaptcha.execute()
+        recaptcha.execute().catch(() => { off(); resolve('') })
       })
     }
     return this.state.value
   }
 
   reset = () => {
+    this.setState({ value: '' })
     const recaptcha = this.ref.current
     if (recaptcha) {
       recaptcha.reset()
@@ -70,9 +71,12 @@ class Captcha extends React.Component<Record<string, unknown>, State> {
       <div className="mb-2">
         <Reaptcha
           ref={this.ref}
+          inject={false}
           sitekey={this.state.sitekey}
           size={this.state.invisible ? 'invisible' : 'normal'}
           onVerify={this.handleVerify}
+          onExpire={() => this.setState({ value: '' })}
+          onError={() => this.handleVerify('')}
         />
       </div>
     ) : (

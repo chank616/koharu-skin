@@ -27,10 +27,11 @@ public class AuthController {
     private final LoginAttempts attempts;
     private final RegistrationService registrations;
     private final AccountMailService mail;
+    private final CaptchaService captcha;
 
     public AuthController(AuthenticationManager authentication, SecurityContextRepository contexts,
                           SessionAuthenticationStrategy sessions, JsonRememberMeServices remember, LoginAttempts attempts,
-                          RegistrationService registrations, AccountMailService mail) {
+                          RegistrationService registrations, AccountMailService mail,CaptchaService captcha) {
         this.authentication = authentication;
         this.contexts = contexts;
         this.sessions = sessions;
@@ -38,13 +39,14 @@ public class AuthController {
         this.attempts = attempts;
         this.registrations = registrations;
         this.mail = mail;
+        this.captcha=captcha;
     }
 
     @PostMapping("/auth/login")
     public Map<String, Object> login(@Valid @RequestBody LoginRequest input,
                                      HttpServletRequest request, HttpServletResponse response) {
         String address = request.getRemoteAddr();
-        if (attempts.count(address) > 3 && !CaptchaController.verify(request.getSession(), input.captcha())) {
+        if (attempts.count(address) > 3 && !captcha.verify(request.getSession(), input.captcha())) {
             return Map.of("code", 1, "message", "请输入正确的验证码", "data", Map.of("login_fails", attempts.count(address)));
         }
         try {
@@ -64,7 +66,7 @@ public class AuthController {
     @PostMapping("/auth/register")
     public Map<String, Object> register(@Valid @RequestBody RegisterRequest input,
                                         HttpServletRequest request, HttpServletResponse response) {
-        if (!CaptchaController.verify(request.getSession(), input.captcha())) throw new BusinessException("请输入正确的验证码");
+        if (!captcha.verify(request.getSession(), input.captcha())) throw new BusinessException("请输入正确的验证码");
         var user = registrations.register(input.email(), input.password(), input.nickname(), input.player_name(), request.getRemoteAddr());
         establishSession(UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()), request, response);
         return Map.of("code", 0, "message", mail.afterRegistration(user.uid()));

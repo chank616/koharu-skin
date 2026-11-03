@@ -10,11 +10,12 @@ import java.util.Map;
 @RestController
 public class AccountMailController {
     private final AccountMailService mail;
-    public AccountMailController(AccountMailService mail) { this.mail = mail; }
+    private final CaptchaService captcha;
+    public AccountMailController(AccountMailService mail,CaptchaService captcha) { this.mail = mail; this.captcha=captcha; }
 
     @PostMapping("/auth/forgot")
     public Map<String, Object> forgot(@Valid @RequestBody Forgot input, HttpServletRequest request) {
-        if (!CaptchaController.verify(request.getSession(), input.captcha())) throw new BusinessException("请输入正确的验证码");
+        if (!captcha.verify(request.getSession(), input.captcha())) throw new BusinessException("请输入正确的验证码");
         mail.forgot(input.email(), request.getRemoteAddr());
         return Map.of("code", 0, "message", "密码重置邮件已发送，请查收邮箱");
     }

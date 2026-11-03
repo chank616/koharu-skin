@@ -65,7 +65,10 @@ public class AdminSettings {
                     new Field("content_policy","上传内容规范","textarea",""))),
                     new Group("announ","用户中心公告",List.of(new Field("announcement","公告（支持 Markdown、HTML 和 {version}）","textarea","欢迎使用 Koharu Skin {version}！"))),
                     new Group("meta","页面元信息",List.of(new Field("meta_keywords","关键词","text",""),
-                            new Field("meta_description","搜索结果中的站点描述","text",""),new Field("meta_extras","额外 meta 标签","textarea",""))));
+                            new Field("meta_description","搜索结果中的站点描述","text",""),new Field("meta_extras","额外 meta 标签","textarea",""))),
+                    new Group("recaptcha","reCAPTCHA v2",List.of(new Field("recaptcha_sitekey","Site key（清空并保存以停用，恢复图片验证码）","text",""),
+                            new Field("recaptcha_secretkey","Secret key（留空保留现有密钥）","password",""),
+                            new Field("recaptcha_invisible","使用隐形 reCAPTCHA（需对应类型的 v2 密钥）","checkbox","false"))));
             case "score" -> List.of(
                     new Group("rate","积分消耗",List.of(
                             new Field("score_per_storage","公开材质每 KB 消耗","number","1"),
@@ -161,6 +164,17 @@ public class AdminSettings {
         }
         if(groupKey.equals("homepage")&&Integer.parseInt(values.get("copyright_prefer"))>6)
             throw new BusinessException("驱动说明样式应为 0～6");
+        if(groupKey.equals("recaptcha")) {
+            String sitekey=values.get("recaptcha_sitekey").trim();
+            String secret=values.get("recaptcha_secretkey").trim();
+            values.put("recaptcha_sitekey",sitekey);
+            if(sitekey.isEmpty()) { values.put("recaptcha_secretkey",""); values.put("recaptcha_invisible","false"); }
+            else {
+                if(secret.isEmpty()) secret=options.text("recaptcha_secretkey","");
+                if(secret.isBlank()) throw new BusinessException("启用 reCAPTCHA 时需要同时设置 Site key 和 Secret key");
+                values.put("recaptcha_secretkey",secret);
+            }
+        }
         if(groupKey.equals("color")&&!top.twinklestars.koharuskin.site.SitePresentation.COLORS.containsKey(values.get("navbar_color")))
             throw new BusinessException("导航栏颜色无效");
         if(groupKey.equals("resources")) {

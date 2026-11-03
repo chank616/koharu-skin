@@ -44,6 +44,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.extension.henan.HenanLogin henan;
     private final top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent;
     private final SitePresentation presentation;
+    private final top.twinklestars.koharuskin.account.CaptchaService captcha;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -55,7 +56,8 @@ public class PageController {
                           top.twinklestars.koharuskin.admin.AdminDashboard dashboard,
                           top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer,
                           top.twinklestars.koharuskin.extension.henan.HenanLogin henan,
-                          top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent,SitePresentation presentation) throws IOException {
+                          top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent,SitePresentation presentation,
+                          top.twinklestars.koharuskin.account.CaptchaService captcha) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -73,6 +75,7 @@ public class PageController {
         this.henan = henan;
         this.oauthConsent=oauthConsent;
         this.presentation=presentation;
+        this.captcha=captcha;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -212,7 +215,7 @@ public class PageController {
     public String register(Model model, @AuthenticationPrincipal AccountUser user) {
         if (user != null) return "redirect:/user";
         page(model, "auth/register", Map.of("player", options.enabled("register_with_player_name", true),
-                "recaptcha", "", "invisible", false));
+                "recaptcha", captcha.siteKey(), "invisible", options.enabled("recaptcha_invisible",false)));
         return "auth/register";
     }
 
@@ -248,7 +251,7 @@ public class PageController {
     public String login(Model model, HttpServletRequest request, @AuthenticationPrincipal AccountUser user) {
         if (user != null) return "redirect:"+top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession());
         page(model, "auth/login", Map.of("tooManyFails", attempts.count(request.getRemoteAddr()) > 3,
-                "recaptcha", "", "invisible", false));
+                "recaptcha", captcha.siteKey(), "invisible", options.enabled("recaptcha_invisible",false)));
         return "auth/login";
     }
 
@@ -339,7 +342,7 @@ public class PageController {
 
     @GetMapping("/auth/forgot")
     public String forgot(Model model) {
-        page(model, "auth/forgot", Map.of("recaptcha", "", "invisible", false));
+        page(model, "auth/forgot", Map.of("recaptcha", captcha.siteKey(), "invisible", options.enabled("recaptcha_invisible",false)));
         model.addAttribute("title", "找回密码");
         return "auth/form";
     }

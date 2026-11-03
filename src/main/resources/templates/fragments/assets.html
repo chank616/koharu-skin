@@ -15,6 +15,7 @@
     <link rel="stylesheet" th:if="${blessing.route=='/'}" th:href="${siteAssets.cdn+'/app/home.css'}" crossorigin="anonymous">
     <link rel="stylesheet" th:if="${siteAssets.css}" th:href="@{/official/site/custom.css}">
     <script th:inline="javascript">window.blessing = /*[[${blessing}]]*/ {};</script>
+    <script th:if="${extra.containsKey('recaptcha') and extra.recaptcha != ''}" src="https://www.recaptcha.net/recaptcha/api.js?render=explicit&amp;hl=zh-CN" async defer></script>
 </head>
 <body>
 <th:block th:fragment="scripts">
