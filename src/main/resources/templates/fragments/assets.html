@@ -20,6 +20,11 @@
         document.body.appendChild(data);
     </script>
     <script th:src="@{/app/app.js}"></script>
+    <th:block th:if="${xiqueerEnabled and #strings.startsWith(blessing.route,'user')}">
+        <script th:src="@{/official/xiqueer/qrcode.min.js}"></script>
+        <script th:src="@{/official/xiqueer/modal.js}"></script>
+        <script th:if="${blessing.route=='user/xiqueer-verification'}" th:src="@{/official/xiqueer/verify.js}"></script>
+    </th:block>
 </th:block>
 </body>
 </html>

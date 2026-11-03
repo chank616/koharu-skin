@@ -40,6 +40,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.report.ReportService reports;
     private final top.twinklestars.koharuskin.notification.NotificationService notifications;
     private final top.twinklestars.koharuskin.admin.AdminDashboard dashboard;
+    private final top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -48,7 +49,8 @@ public class PageController {
                           ProfileMapper profiles, OfficialExtensions extensions, top.twinklestars.koharuskin.admin.AdminSettings settings,
                           top.twinklestars.koharuskin.report.ReportService reports,
                           top.twinklestars.koharuskin.notification.NotificationService notifications,
-                          top.twinklestars.koharuskin.admin.AdminDashboard dashboard) throws IOException {
+                          top.twinklestars.koharuskin.admin.AdminDashboard dashboard,
+                          top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -62,6 +64,7 @@ public class PageController {
         this.reports = reports;
         this.notifications = notifications;
         this.dashboard = dashboard;
+        this.xiqueer = xiqueer;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -71,6 +74,7 @@ public class PageController {
     public void appearance(Model model, @AuthenticationPrincipal AccountUser user) {
         model.addAttribute("darkMode", user != null && profiles.find(user.uid()).isDarkMode());
         model.addAttribute("notifications",user==null?null:notifications.unreadJson(user.uid()));
+        model.addAttribute("xiqueerEnabled",user!=null&&extensions.enabled("xiqueer-verification"));
     }
 
     @GetMapping("/user/profile")
@@ -81,6 +85,15 @@ public class PageController {
         model.addAttribute("emailLocked",extensions.enabled("auth-henan"));
         return "user/profile";
     }
+
+    @GetMapping("/user/xiqueer-verification")
+    public String xiqueer(Model model,@AuthenticationPrincipal AccountUser user,jakarta.servlet.http.HttpSession session) {
+        model.addAttribute("verification",xiqueer.page(user,session));
+        page(model,"user/xiqueer-verification",Map.of());
+        return "user/xiqueer";
+    }
+    @GetMapping({"/hegaolian","/user/hegaolian"})
+    public String legacyXiqueer() { xiqueer.requireEnabled(); return "redirect:/user/xiqueer-verification"; }
 
     @GetMapping("/admin/users")
     public String adminUsers(Model model, @AuthenticationPrincipal AccountUser user) {

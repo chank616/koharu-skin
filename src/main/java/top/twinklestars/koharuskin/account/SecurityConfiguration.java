@@ -58,7 +58,7 @@ public class SecurityConfiguration {
                                             @Value("${koharu.remember-key}") String key, AccountMapper users) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/auth/**", "/app/**", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/**", "/avatar/**", "/*.json", "/csl/*.json").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/**", "/avatar/**", "/*.json", "/csl/*.json", "/official/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.HEAD, "/*.json", "/csl/*.json").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/skinlib", "/skinlib/list", "/skinlib/show/*").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")

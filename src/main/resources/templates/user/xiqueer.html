@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('喜鹊儿认证')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a><a th:href="@{/user}" class="nav-link">用户中心</a>
+        <a th:href="@{/user/profile}" class="nav-link">个人资料</a><th:block th:replace="~{fragments/notifications :: bell}"></th:block>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <div class="row justify-content-center"><div class="col-lg-7 col-xl-6"><div class="card card-primary card-outline">
+            <div class="card-header"><h1 class="card-title"><i class="fas fa-qrcode mr-1"></i>学生邮箱验证</h1></div>
+            <div class="card-body text-center">
+                <div class="alert alert-info text-left mb-3">目前只支持华水，其他学校尚未对接。</div>
+                <div th:if="${verification.verified}"><div class="alert alert-success">当前账号已经完成邮箱验证。</div><a class="btn btn-primary" th:href="@{/user}">返回用户中心</a></div>
+                <div th:if="${!verification.verified and !verification.eligible}"><div class="alert alert-warning" th:text="${'当前邮箱 '+verification.email+' 不是受支持的华水学生邮箱。'}"></div><a class="btn btn-secondary" th:href="@{/user}">返回用户中心</a></div>
+                <th:block th:if="${!verification.verified and verification.eligible}">
+                    <p>请使用喜鹊儿 APP 扫描下方二维码，页面会自动完成验证。</p>
+                    <p class="text-muted small" th:text="${'当前待验证邮箱：'+verification.email}"></p>
+                    <div id="xiqueer-verification" data-active="1" th:attr="data-challenge=${verification.challenge}"
+                         data-status-url="/user/xiqueer-verification/status" data-redirect-url="/user" data-reload-url="/user/xiqueer-verification"
+                         data-waiting="等待喜鹊儿 APP 扫码……" data-success="认证成功。">
+                        <div id="xiqueer-qrcode" class="d-inline-block bg-white p-3 border rounded"></div>
+                        <p id="xiqueer-status" class="mt-3 mb-2 text-info" aria-live="polite"><i class="fas fa-spinner fa-spin mr-1"></i>等待喜鹊儿 APP 扫码……</p>
+                        <a id="xiqueer-reload" class="btn btn-outline-primary d-none" th:href="@{/user/xiqueer-verification}">生成新二维码</a>
+                    </div>
+                </th:block>
+            </div>
+        </div></div></div>
+    </div></section></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body></html>

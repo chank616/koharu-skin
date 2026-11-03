@@ -27,6 +27,9 @@ public interface AccountMapper {
     @Update("UPDATE users SET verified=true,verification_token='' WHERE uid=#{uid}")
     void verify(long uid);
 
+    @Update("UPDATE users SET verified=true,verification_token='' WHERE uid=#{uid} AND LOWER(email)=LOWER(#{email}) AND permission>=0")
+    int verifyEmail(long uid,String email);
+
     @Update("UPDATE users SET password=#{password},remember_token=NULL WHERE uid=#{uid}")
     void password(long uid, String password);
 }

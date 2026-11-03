@@ -23,6 +23,7 @@
         </div></div>
         <div id="usage-box"></div>
         <div id="email-verification"></div>
+        <p th:if="${xiqueerEnabled and extra.unverified}"><a th:href="@{/user/xiqueer-verification}">使用喜鹊儿 APP 扫码验证学生邮箱</a></p>
         <div class="card" th:if="${yggUrl != null}"><div class="card-header"><h2 class="card-title">启动器外置登录</h2></div><div class="card-body">
             <p>在支持 authlib-injector 的启动器中添加认证服务器，使用本站邮箱或角色名及密码登录。</p>
             <label for="ygg-address">认证服务器地址</label><input id="ygg-address" class="form-control" readonly th:value="${yggUrl}">

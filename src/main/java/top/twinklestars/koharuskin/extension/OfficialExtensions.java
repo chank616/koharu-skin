@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OfficialExtensions {
     public record Extension(String name,String title,String description,boolean enabled,String configUrl) {}
-    private static final Map<String,String> TITLES=Map.of("yggdrasil-api","外置登录","single-player-limit","单角色绑定","restricted-email-domains","邮箱域名限制","skin-api-extension","皮肤 API 扩展");
+    private static final Map<String,String> TITLES=Map.of("yggdrasil-api","外置登录","single-player-limit","单角色绑定","restricted-email-domains","邮箱域名限制","skin-api-extension","皮肤 API 扩展","xiqueer-verification","喜鹊儿认证");
     private final SiteOptions options;
     private final JsonMapper json;
 
@@ -33,7 +33,8 @@ public class OfficialExtensions {
                 new Extension("skin-api-extension",TITLES.get("skin-api-extension"),"使用私有 API 令牌查询邮箱域名下的角色 UUID，或获取角色及用户头像。",enabled("skin-api-extension"),"/admin/extensions/config#skin-api-extension"),
                 new Extension("yggdrasil-api",TITLES.get("yggdrasil-api"),"为启动器提供外置登录、服务器进服验证和签名材质。",enabled("yggdrasil-api"),"/admin/extensions/config#yggdrasil-api"),
                 new Extension("single-player-limit",TITLES.get("single-player-limit"),"要求每个账号绑定一个角色。已有多个角色的用户自行选择保留的角色，不会自动删除。",enabled("single-player-limit"),""),
-                new Extension("restricted-email-domains",TITLES.get("restricted-email-domains"),"通过允许和禁止名单限制注册、修改邮箱时可用的邮箱域名。",enabled("restricted-email-domains"),"/admin/extensions/config#restricted-email-domains"));
+                new Extension("restricted-email-domains",TITLES.get("restricted-email-domains"),"通过允许和禁止名单限制注册、修改邮箱时可用的邮箱域名。",enabled("restricted-email-domains"),"/admin/extensions/config#restricted-email-domains"),
+                new Extension("xiqueer-verification",TITLES.get("xiqueer-verification"),"使用喜鹊儿 APP 扫码验证华北水利水电大学学生邮箱。",enabled("xiqueer-verification"),""));
     }
 
     @Transactional
