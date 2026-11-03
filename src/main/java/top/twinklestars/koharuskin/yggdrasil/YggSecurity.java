@@ -14,10 +14,10 @@ public class YggSecurity {
     @Bean
     org.springframework.boot.web.servlet.FilterRegistrationBean<jakarta.servlet.Filter> authlibLocation(
             top.twinklestars.koharuskin.extension.OfficialExtensions extensions,top.twinklestars.koharuskin.site.SiteOptions options,
-            @org.springframework.beans.factory.annotation.Value("${koharu.public-url}") String publicUrl) {
+            top.twinklestars.koharuskin.site.SiteUrls urls) {
         jakarta.servlet.Filter filter=(request,response,chain)->{
             if(options.enabled("ygg_enable_ali",true)&&(extensions.enabled("yggdrasil-api")||extensions.enabled("yggdrasil-connect")))
-                ((jakarta.servlet.http.HttpServletResponse)response).setHeader("X-Authlib-Injector-API-Location",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
+                ((jakarta.servlet.http.HttpServletResponse)response).setHeader("X-Authlib-Injector-API-Location",urls.publicUrl()+"/api/yggdrasil/");
             chain.doFilter(request,response);
         };
         var registration=new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);

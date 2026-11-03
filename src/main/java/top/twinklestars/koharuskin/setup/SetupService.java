@@ -22,11 +22,11 @@ public class SetupService {
         if(installed()||users.hasUsers()) throw new ResponseStatusException(HttpStatus.CONFLICT,"站点已安装，不能重复创建管理员");
     }
     @Transactional
-    public void install(String siteName,String email,String nickname,String password,String ip) {
+    public void install(String siteName,String email,String nickname,String password,String ip,String siteUrl) {
         options.lockRegistration();requirePending();
         users.administrator(email,nickname,passwords.encode(password),options.number("user_initial_score",1000),ip,
                 LocalDateTime.now(clock).minusDays(1));
-        save("site_name",siteName);save("plugins_enabled","[\"yggdrasil-api\"]");
+        save("site_name",siteName);save("site_url",siteUrl);save("plugins_enabled","[\"yggdrasil-api\"]");
         options.update("koharu_installed","true");
     }
     private void save(String name,String value) {

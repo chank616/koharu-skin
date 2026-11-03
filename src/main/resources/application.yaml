@@ -44,5 +44,5 @@ koharu:
   oauth-public-key: ${OAUTH_PUBLIC_KEY:}
   skin-api-tokens: ${SKIN_API_TOKENS:}
   remember-key: ${REMEMBER_KEY}
-  public-url: ${PUBLIC_URL:http://localhost:8080}
+  public-url: ${PUBLIC_URL:}
   mail-from: ${MAIL_FROM:noreply@localhost}

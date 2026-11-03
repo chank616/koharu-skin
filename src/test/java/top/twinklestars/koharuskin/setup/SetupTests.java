@@ -16,7 +16,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties={"spring.config.import=","koharu.union-network-enabled=false"})
+@SpringBootTest(properties={"spring.config.import=","koharu.union-network-enabled=false","koharu.public-url="})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SetupTests {
@@ -57,6 +57,7 @@ class SetupTests {
         assertThat(passwords.matches("setup-password",admin.password())).isTrue();assertThat(admin.password()).isNotEqualTo("setup-password");
         assertThat(options.get("koharu_installed")).isEqualTo("true");assertThat(options.get("site_name")).isEqualTo("测试皮肤站");
         assertThat(options.get("plugins_enabled")).isEqualTo("[\"yggdrasil-api\"]");
+        assertThat(options.get("site_url")).isEqualTo("http://localhost");
         mvc.perform(get("/auth/login")).andExpect(status().isOk());mvc.perform(get("/api/yggdrasil")).andExpect(status().isOk());
         mvc.perform(post("/auth/login").with(csrf()).contentType("application/json")
                 .content("{\"identification\":\"admin@example.invalid\",\"password\":\"setup-password\"}"))

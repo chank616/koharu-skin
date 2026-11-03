@@ -3,16 +3,16 @@
 <head th:replace="~{fragments/assets :: head(${siteName})}"></head>
 <body class="hold-transition layout-top-nav">
 <div class="hp-wrapper">
-    <img class="home-background" th:classappend="${home.fixed}?'fixed'" th:src="${home.picture}" alt="">
+    <img class="home-background" th:classappend="${home.fixed}?'fixed'" th:src="@{${home.picture}}" alt="">
     <nav class="navbar navbar-expand fixed-top ml-0" th:classappend="${home.navbar+(home.transparent?' transparent':'')}">
         <div class="container"><a class="navbar-brand" th:href="@{/}" th:text="${siteName}"></a>
             <ul class="navbar-nav ml-auto"><li class="nav-item"><a class="nav-link" th:href="@{/skinlib}" th:text="${translations.text('general.skinlib')}">皮肤库</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="${loggedIn?'/user':'/auth/login'}" th:text="${translations.text(loggedIn?'general.user-center':'general.login')}"></a></li></ul>
+                <li class="nav-item"><a class="nav-link" th:href="${siteBase+(loggedIn?'/user':'/auth/login')}" th:text="${translations.text(loggedIn?'general.user-center':'general.login')}"></a></li></ul>
         </div>
     </nav>
     <div class="container"><div class="splash"><h1 class="splash-head" th:text="${siteName}"></h1>
         <p class="splash-subhead" th:text="${siteDescription}"></p>
-        <p><a class="main-button" th:href="${loggedIn?'/user':'/auth/register'}" th:text="${translations.text(loggedIn?'general.user-center':'general.register')}"></a></p>
+        <p><a class="main-button" th:href="${siteBase+(loggedIn?'/user':'/auth/register')}" th:text="${translations.text(loggedIn?'general.user-center':'general.register')}"></a></p>
     </div></div>
 </div>
 <th:block th:unless="${home.hideIntro}">
@@ -22,7 +22,7 @@
         <div class="col-lg"><i class="fas fa-gamepad mb-3" aria-hidden="true"></i><h3 th:text="${translations.text('koharu.home.game-title')}">游戏内使用</h3><p th:text="${translations.text('koharu.home.game')}">通过外置登录或 CustomSkinLoader，让其他玩家看到你的皮肤。</p></div>
     </div></div></section>
     <section id="footer-wrap"><div class="container"><div class="row align-items-center"><p class="col-lg-9 mb-4 mb-lg-0"><span th:text="${translations.text('koharu.home.introduction', {'sitename':siteName})}"></span></p>
-        <div class="col-lg-3"><a class="main-button" th:href="${loggedIn?'/user':'/auth/register'}" th:text="${translations.text('index.start')}">开始使用</a></div>
+        <div class="col-lg-3"><a class="main-button" th:href="${siteBase+(loggedIn?'/user':'/auth/register')}" th:text="${translations.text('index.start')}">开始使用</a></div>
     </div></div></section>
 </th:block>
 <footer id="copyright" th:class="${home.hideIntro?'without-intro':'with-intro'}"><div class="container">

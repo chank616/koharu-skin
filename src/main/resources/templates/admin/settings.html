@@ -14,6 +14,11 @@
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <h1 class="h3 mb-3" th:text="${title}"></h1>
+        <div th:if="${section=='resource'}" class="alert alert-info">
+            <p class="mb-1">当前公开地址：<span th:text="${publicSiteUrl}"></span></p>
+            <p class="mb-1" th:if="${publicSiteUrlOverridden}">公开地址已由部署配置 PUBLIC_URL 固定，优先于下方站点地址。移除该覆盖后才会使用后台设置。</p>
+            <p class="mb-0">地址变更后请重启应用以更新 OAuth 服务元数据。关闭自动识别时，页面链接使用公开地址；CDN 只用于前端静态文件。</p>
+        </div>
         <p th:if="${section=='extensions/config'}"><a th:href="@{/admin/yggdrasil-log}">查看外置登录日志</a></p>
         <div class="alert alert-success" role="status" th:if="${param.saved != null}">设置已保存</div>
         <div class="alert alert-success" role="status" th:if="${cacheCleared}">头像和预览图缓存已清理</div>

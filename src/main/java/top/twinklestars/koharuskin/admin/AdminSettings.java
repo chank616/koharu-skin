@@ -33,6 +33,9 @@ public class AdminSettings {
                             new Field("custom_css","CSS（直接填写代码，不含 style 标签）","textarea",""),
                             new Field("custom_js","JavaScript（直接填写代码，不含 script 标签）","textarea",""))));
             case "resource" -> List.of(new Group("resources","资源访问",List.of(
+                    new Field("site_url","站点公开地址（邮件、启动器和皮肤访问使用的根地址）","text",""),
+                    new Field("auto_detect_asset_url","页面资源和链接使用当前访问地址","checkbox","true"),
+                    new Field("force_ssl","生成 HTTPS 资源链接（请先配置 HTTPS 服务）","checkbox","false"),
                     new Field("cache_expire_time","材质文件和 CustomSkinLoader 角色信息缓存时长（秒）","number","31536000"),
                     new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))),
                     new Group("cache","图片渲染缓存",List.of(
@@ -218,6 +221,12 @@ public class AdminSettings {
         if(groupKey.equals("color")&&!top.twinklestars.koharuskin.site.SitePresentation.COLORS.containsKey(values.get("navbar_color")))
             throw new BusinessException("导航栏颜色无效");
         if(groupKey.equals("resources")) {
+            String siteUrl=values.get("site_url").trim();
+            if(!siteUrl.isEmpty()) {
+                try { siteUrl=top.twinklestars.koharuskin.site.SiteUrls.normalize(siteUrl); }
+                catch(IllegalArgumentException error) { throw new BusinessException("站点地址必须是完整 HTTP(S) 地址，不能带账号、查询参数或片段"); }
+            }
+            values.put("site_url",siteUrl);
             String cdn=values.get("cdn_address").trim().replaceAll("/+$","");
             if(!cdn.isEmpty()) {
                 java.net.URI uri;

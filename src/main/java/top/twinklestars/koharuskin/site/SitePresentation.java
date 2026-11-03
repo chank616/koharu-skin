@@ -19,11 +19,12 @@ public class SitePresentation {
             entry("olive","#3d9970"),entry("navy","#001f3f"),entry("lime","#01ff70"),entry("light","#f8f9fa"),entry("warning","#ffc107"),
             entry("white","#ffffff"),entry("orange","#fd7e14"));
     private final SiteOptions options;
+    private final SiteUrls urls;
     private final ObjectProvider<BuildProperties> build;
     private final Parser markdown;
     private final HtmlRenderer html;
-    public SitePresentation(SiteOptions options,ObjectProvider<BuildProperties> build) {
-        this.options=options; this.build=build;
+    public SitePresentation(SiteOptions options,ObjectProvider<BuildProperties> build,SiteUrls urls) {
+        this.options=options; this.build=build;this.urls=urls;
         var extensions=List.<org.commonmark.Extension>of(org.commonmark.ext.gfm.tables.TablesExtension.create(),
                 org.commonmark.ext.gfm.strikethrough.StrikethroughExtension.create(),org.commonmark.ext.autolink.AutolinkExtension.create());
         markdown=Parser.builder().extensions(extensions).build();
@@ -52,7 +53,7 @@ public class SitePresentation {
         };
         String copyright=options.localized("copyright_text","Copyright &copy; {year} {site_name}.")
                 .replace("{year}",Year.now().toString()).replace("{site_name}",HtmlUtils.htmlEscape(options.localized("site_name","Koharu Skin")))
-                .replace("{site_url}","/");
+                .replace("{site_url}",HtmlUtils.htmlEscape(urls.publicUrl()));
         return new Home(picture,options.enabled("fixed_bg",false),options.enabled("hide_intro",false),
                 options.enabled("transparent_navbar",false),navbar(),powered,copyright);
     }

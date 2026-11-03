@@ -12,10 +12,10 @@ public class OAuthRegisteredClients implements RegisteredClientRepository {
     private final OAuthClientMapper clients;
     private final OAuthScopes scopes;
     private final top.twinklestars.koharuskin.extension.OfficialExtensions extensions;
-    private final String callback;
+    private final top.twinklestars.koharuskin.site.SiteUrls urls;
     public OAuthRegisteredClients(OAuthClientMapper clients,OAuthScopes scopes,top.twinklestars.koharuskin.extension.OfficialExtensions extensions,
-                                  @org.springframework.beans.factory.annotation.Value("${koharu.public-url}") String publicUrl) {
-        this.clients=clients; this.scopes=scopes; this.extensions=extensions; this.callback=publicUrl.replaceAll("/+$","")+"/yggc/callback";
+                                  top.twinklestars.koharuskin.site.SiteUrls urls) {
+        this.clients=clients; this.scopes=scopes; this.extensions=extensions; this.urls=urls;
     }
     @Override public void save(RegisteredClient client) { throw new UnsupportedOperationException("请通过应用管理注册客户端"); }
     @Override public RegisteredClient findById(String id) { return findByClientId(id); }
@@ -36,7 +36,7 @@ public class OAuthRegisteredClients implements RegisteredClientRepository {
         if(!client.personalAccessClient()&&!client.passwordClient()) builder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
         Arrays.stream(client.redirect().split(",")).forEach(builder::redirectUri);
-        if(extensions.enabled("yggdrasil-connect")) builder.redirectUri(callback);
+        if(extensions.enabled("yggdrasil-connect")) builder.redirectUri(urls.publicUrl()+"/yggc/callback");
         scopes.list().forEach(scope->builder.scope(scope.id()));
         return builder.build();
     }

@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/setup")
 public class SetupController {
     private final SetupService setup;
-    public SetupController(SetupService setup) { this.setup=setup; }
+    private final top.twinklestars.koharuskin.site.SiteUrls urls;
+    public SetupController(SetupService setup,top.twinklestars.koharuskin.site.SiteUrls urls) { this.setup=setup;this.urls=urls; }
     public record Form(@NotBlank @Size(max=100) String siteName,@NotBlank @Email @Size(max=100) String email,
                        @NotBlank @Size(max=50) String nickname,@NotBlank @Size(min=8,max=32) String password,@NotBlank String confirmation) {}
     @GetMapping({"","/"}) public String page(Model model) {
@@ -22,7 +23,8 @@ public class SetupController {
         setup.requirePending();
         if(!java.util.Objects.equals(form.password(),form.confirmation())) errors.rejectValue("confirmation","confirmation","两次输入的密码不一致");
         if(errors.hasErrors()) return "setup";
-        setup.install(form.siteName(),form.email(),form.nickname(),form.password(),request.getRemoteAddr());
+        String root=urls.overridden()?urls.publicUrl():org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
+        setup.install(form.siteName(),form.email(),form.nickname(),form.password(),request.getRemoteAddr(),root);
         return "redirect:/auth/login";
     }
 }

@@ -10,9 +10,9 @@
     <meta name="csrf-token" th:content="${_csrf.token}">
     <title th:text="${blessing.route=='/'?siteName:title + ' - ' + siteName}">Koharu Skin</title>
     <link th:if="${siteAssets.cdn!=''}" rel="preconnect" id="cdn-host" th:href="${siteAssets.cdn}" crossorigin="anonymous">
-    <link rel="stylesheet" th:href="${siteAssets.cdn+'/app/style.css'}" crossorigin="anonymous">
-    <link rel="icon" th:if="${favicon != ''}" th:href="${favicon}">
-    <link rel="stylesheet" th:if="${blessing.route=='/'}" th:href="${siteAssets.cdn+'/app/home.css'}" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="${(siteAssets.cdn!=''?siteAssets.cdn:siteBase)+'/app/style.css'}" crossorigin="anonymous">
+    <link rel="icon" th:if="${favicon != ''}" th:href="@{${favicon}}">
+    <link rel="stylesheet" th:if="${blessing.route=='/'}" th:href="${(siteAssets.cdn!=''?siteAssets.cdn:siteBase)+'/app/home.css'}" crossorigin="anonymous">
     <link rel="stylesheet" th:if="${siteAssets.css}" th:href="@{/official/site/custom.css}">
     <script th:inline="javascript">window.blessing = /*[[${blessing}]]*/ {};</script>
     <script th:if="${extra.containsKey('recaptcha') and extra.recaptcha != ''}" th:src="${'https://www.recaptcha.net/recaptcha/api.js?render=explicit&amp;hl='+#locale.toLanguageTag()}" async defer></script>
@@ -30,8 +30,8 @@
         data.textContent = JSON.stringify(extra);
         document.body.appendChild(data);
     </script>
-    <script th:src="${siteAssets.cdn+'/app/app.js'}" crossorigin="anonymous"></script>
-    <script th:if="${blessing.route=='/'}" th:src="${siteAssets.cdn+'/app/home.js'}" crossorigin="anonymous"></script>
+    <script th:src="${(siteAssets.cdn!=''?siteAssets.cdn:siteBase)+'/app/app.js'}" crossorigin="anonymous"></script>
+    <script th:if="${blessing.route=='/'}" th:src="${(siteAssets.cdn!=''?siteAssets.cdn:siteBase)+'/app/home.js'}" crossorigin="anonymous"></script>
     <script th:if="${hitokotoEnabled and (#strings.startsWith(blessing.route,'user') or #strings.startsWith(blessing.route,'admin'))}" th:src="@{/official/hitokoto.js}"></script>
     <th:block th:if="${xiqueerEnabled and #strings.startsWith(blessing.route,'user')}">
         <script th:src="@{/official/xiqueer/qrcode.min.js}"></script>

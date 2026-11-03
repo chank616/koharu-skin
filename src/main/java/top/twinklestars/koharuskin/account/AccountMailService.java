@@ -26,7 +26,7 @@ public class AccountMailService {
     private final SiteOptions options;
     private final PasswordEncoder passwords;
     private final ObjectProvider<JavaMailSender> mail;
-    private final String publicUrl;
+    private final top.twinklestars.koharuskin.site.SiteUrls urls;
     private final String from;
     private final byte[] key;
     private final java.time.Clock clock;
@@ -34,11 +34,11 @@ public class AccountMailService {
     private final ConcurrentHashMap<String, Long> cooldowns = new ConcurrentHashMap<>();
 
     public AccountMailService(AccountMapper accounts, SiteOptions options, PasswordEncoder passwords,
-                              ObjectProvider<JavaMailSender> mail, @Value("${koharu.public-url}") String publicUrl,
+                              ObjectProvider<JavaMailSender> mail, top.twinklestars.koharuskin.site.SiteUrls urls,
                               @Value("${koharu.mail-from}") String from, @Value("${koharu.remember-key}") String key, java.time.Clock clock,
                               top.twinklestars.koharuskin.oauth.JanusMapper janus) {
         this.accounts = accounts; this.options = options; this.passwords = passwords; this.mail = mail;
-        this.publicUrl = publicUrl.replaceAll("/+$", ""); this.from = from; this.key = key.getBytes(StandardCharsets.UTF_8);
+        this.urls = urls; this.from = from; this.key = key.getBytes(StandardCharsets.UTF_8);
         this.clock = clock;
         this.janus=janus;
     }
@@ -78,7 +78,7 @@ public class AccountMailService {
             return now + interval;
         });
         long expires = now + lifetime;
-        String url = publicUrl + "/auth/" + purpose + "/" + user.uid() + "?expires=" + expires + "&signature=" + signature(user, purpose, expires);
+        String url = urls.publicUrl() + "/auth/" + purpose + "/" + user.uid() + "?expires=" + expires + "&signature=" + signature(user, purpose, expires);
         var message = new SimpleMailMessage();
         message.setFrom(from); message.setTo(user.email());
         message.setSubject(options.text("site_name", "Koharu Skin") + " - " + title);

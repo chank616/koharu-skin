@@ -1,6 +1,5 @@
 package top.twinklestars.koharuskin.oauth;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.server.authorization.*;
@@ -25,14 +24,14 @@ public class YggConnect {
     private final AccountMapper accounts;
     private final OfficialExtensions extensions;
     private final SiteOptions options;
-    private final String root;
+    private final top.twinklestars.koharuskin.site.SiteUrls urls;
     private final YggConnectMapper legacy;
     private final tools.jackson.databind.json.JsonMapper json;
     public YggConnect(OAuthAuthorizations authorizations,OAuthRegisteredClients clients,
                       PlayerMapper players,YggMapper ygg,YggProfiles profiles,AccountMapper accounts,OfficialExtensions extensions,
-                      SiteOptions options,@Value("${koharu.public-url}") String root,YggConnectMapper legacy,tools.jackson.databind.json.JsonMapper json) {
+                      SiteOptions options,top.twinklestars.koharuskin.site.SiteUrls urls,YggConnectMapper legacy,tools.jackson.databind.json.JsonMapper json) {
         this.authorizations=authorizations; this.clients=clients; this.players=players; this.ygg=ygg;
-        this.profiles=profiles; this.accounts=accounts; this.extensions=extensions; this.options=options; this.root=root.replaceAll("/+$","");
+        this.profiles=profiles; this.accounts=accounts; this.extensions=extensions; this.options=options; this.urls=urls;
         this.legacy=legacy; this.json=json;
     }
     public record Selection(String codeId,String state,String clientName,List<Map<String,String>> profiles) {}
@@ -40,7 +39,7 @@ public class YggConnect {
     public void requireEnabled() {
         if(!extensions.enabled("yggdrasil-connect")) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"联合认证扩展未启用");
     }
-    public String callbackUri() { return root+"/yggc/callback"; }
+    public String callbackUri() { return urls.publicUrl()+"/yggc/callback"; }
     public String issuer() {
         requireEnabled();
         String value=options.text("ygg_connect_server_url","").replaceAll("/+$","");
@@ -119,7 +118,7 @@ public class YggConnect {
     public Map<String,Object> userInfo(AccountUser user,Set<String> scopes,String selected) {
         requireEnabled();
         var result=new LinkedHashMap<String,Object>(); result.put("sub",Long.toString(user.uid()));
-        if(scopes.contains("profile")) { result.put("nickname",user.nickname()); result.put("picture",root+"/avatar/user/"+user.uid()); }
+        if(scopes.contains("profile")) { result.put("nickname",user.nickname()); result.put("picture",urls.publicUrl()+"/avatar/user/"+user.uid()); }
         if(scopes.contains("email")) { result.put("email",user.email()); result.put("email_verified",accounts.verified(user.uid())); }
         if(scopes.contains(OAuthScopes.SELECT)) {
             String uuid=selected;

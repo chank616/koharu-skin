@@ -23,8 +23,10 @@ public class OAuthSecurity {
             return selector.select(new com.nimbusds.jose.jwk.JWKSet(rsa));
         };
     }
-    @Bean AuthorizationServerSettings authorizationServerSettings(@Value("${koharu.public-url}") String publicUrl) {
-        return AuthorizationServerSettings.builder().issuer(publicUrl.replaceAll("/+$",""))
+    @Bean AuthorizationServerSettings authorizationServerSettings(top.twinklestars.koharuskin.site.SiteUrls urls) {
+        var settings=AuthorizationServerSettings.builder();
+        if(urls.configured()) settings.issuer(urls.publicUrl());
+        return settings
                 .authorizationEndpoint("/oauth/authorize").tokenEndpoint("/oauth/token")
                 .tokenRevocationEndpoint("/oauth/revoke").tokenIntrospectionEndpoint("/oauth/introspect").build();
     }

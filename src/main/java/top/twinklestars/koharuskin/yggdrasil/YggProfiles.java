@@ -1,6 +1,5 @@
 package top.twinklestars.koharuskin.yggdrasil;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 import top.twinklestars.koharuskin.player.Player;
@@ -20,12 +19,12 @@ public class YggProfiles {
     private final YggKeys keys;
     private final JsonMapper json;
     private final Clock clock;
-    private final String publicUrl;
+    private final top.twinklestars.koharuskin.site.SiteUrls urls;
     private final top.twinklestars.koharuskin.extension.OfficialExtensions extensions;
     public YggProfiles(PlayerService players, TextureMapper textures, SiteOptions options, YggKeys keys,
-                       JsonMapper json, Clock clock, @Value("${koharu.public-url}") String publicUrl,top.twinklestars.koharuskin.extension.OfficialExtensions extensions) {
+                       JsonMapper json, Clock clock, top.twinklestars.koharuskin.site.SiteUrls urls,top.twinklestars.koharuskin.extension.OfficialExtensions extensions) {
         this.players=players; this.textures=textures; this.options=options; this.keys=keys; this.json=json; this.clock=clock;
-        this.publicUrl=publicUrl.replaceAll("/+$","");
+        this.urls=urls;
         this.extensions=extensions;
     }
 
@@ -34,6 +33,7 @@ public class YggProfiles {
     }
 
     public Map<String,Object> full(Player player, boolean unsigned) {
+        String publicUrl=urls.publicUrl();
         var profile=simple(player);
         Map<String,Object> textureData=new LinkedHashMap<>();
         var skin=textures.find(player.tidSkin());
@@ -54,6 +54,7 @@ public class YggProfiles {
     }
 
     public Map<String,Object> metadata() {
+        String publicUrl=urls.publicUrl();
         Set<String> domains=new LinkedHashSet<>();
         domains.add(URI.create(publicUrl).getHost());
         Arrays.stream(options.text("ygg_skin_domain","").split(",")).map(String::trim).filter(domain -> !domain.isEmpty()).forEach(domains::add);

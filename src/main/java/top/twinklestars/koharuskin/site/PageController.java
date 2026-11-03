@@ -50,8 +50,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist;
     private final top.twinklestars.koharuskin.oauth.YggConnect yggConnect;
     private final top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs;
-    @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
-    private String publicUrl;
+    private final SiteUrls urls;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
                           TextureService textures, AccountMapper accounts, AccountMailService mail,
@@ -70,7 +69,7 @@ public class PageController {
                           top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles,
                           top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist,
                           top.twinklestars.koharuskin.oauth.YggConnect yggConnect,
-                          top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs,SiteTranslations translations) {
+                          top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs,SiteTranslations translations,SiteUrls urls) {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -97,12 +96,15 @@ public class PageController {
         this.unionBlacklist=unionBlacklist;
         this.yggConnect=yggConnect;
         this.yggLogs=yggLogs;
-        this.translations=translations;
+        this.translations=translations;this.urls=urls;
     }
 
     @org.springframework.web.bind.annotation.ModelAttribute
     public void appearance(Model model, @AuthenticationPrincipal AccountUser user,HttpServletRequest request) {
         model.addAttribute("translations",translations);
+        model.addAttribute("siteBase",urls.webBase(request));
+        model.addAttribute("publicSiteUrl",urls.publicUrl());
+        model.addAttribute("publicSiteUrlOverridden",urls.overridden());
         model.addAttribute("darkMode", user != null && profiles.find(user.uid()).isDarkMode());
         model.addAttribute("notifications",user==null?null:notifications.unreadJson(user.uid()));
         model.addAttribute("xiqueerEnabled",user!=null&&extensions.enabled("xiqueer-verification"));
@@ -115,6 +117,7 @@ public class PageController {
         SiteLocale.LANGUAGES.forEach((locale,label)->languageLinks.put(locale,
                 org.springframework.web.util.UriComponentsBuilder.fromUriString(request.getRequestURI()).query(request.getQueryString())
                         .replaceQueryParam("lang",locale).build(true).toUriString()));
+        languageLinks.replaceAll((locale,link)->SiteUrls.webLink(urls.webBase(request),request.getContextPath(),link));
         model.addAttribute("languageLinks",languageLinks);
         model.addAttribute("languages",SiteLocale.LANGUAGES);
     }
@@ -367,7 +370,7 @@ public class PageController {
     @GetMapping("/user")
     public String user(Model model, @AuthenticationPrincipal AccountUser user) {
         if ((extensions.enabled("yggdrasil-api")||extensions.enabled("yggdrasil-connect")) && options.enabled("ygg_show_config_section",true)) {
-            model.addAttribute("yggUrl",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
+            model.addAttribute("yggUrl",urls.publicUrl()+"/api/yggdrasil/");
         }
         model.addAttribute("yggPasswordLogin",!options.enabled("ygg_disable_authserver",false));
         page(model, "user", Map.of("unverified", options.enabled("require_verification", false) && !accounts.verified(user.uid())));
@@ -383,7 +386,7 @@ public class PageController {
         String siteName=options.localized("site_name","Koharu Skin");
         model.addAttribute("siteName", siteName);
         model.addAttribute("siteDescription",options.localized("site_description",""));
-        model.addAttribute("blessing", Map.of("base_url", "", "route", route, "site_name", siteName,
+        model.addAttribute("blessing", Map.of("base_url", model.getAttribute("siteBase"), "route", route, "site_name", siteName,
                 "locale", SiteLocale.current(), "version", "0.0.1", "debug", false, "env", "production", "i18n", translations.group("front-end")));
         model.addAttribute("extra", extra);
     }
