@@ -48,6 +48,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.account.ProfileService profileService;
     private final org.springframework.security.web.context.SecurityContextRepository contexts;
     private final top.twinklestars.koharuskin.account.JsonRememberMeServices remember;
+    private final top.twinklestars.koharuskin.yggdrasil.UnionMember union;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -63,7 +64,8 @@ public class PageController {
                           top.twinklestars.koharuskin.account.CaptchaService captcha,
                           top.twinklestars.koharuskin.account.ProfileService profileService,
                           org.springframework.security.web.context.SecurityContextRepository contexts,
-                          top.twinklestars.koharuskin.account.JsonRememberMeServices remember) throws IOException {
+                          top.twinklestars.koharuskin.account.JsonRememberMeServices remember,
+                          top.twinklestars.koharuskin.yggdrasil.UnionMember union) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -85,6 +87,7 @@ public class PageController {
         this.profileService=profileService;
         this.contexts=contexts;
         this.remember=remember;
+        this.union=union;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -176,7 +179,23 @@ public class PageController {
         model.addAttribute("groups",settings.groups(section));
         model.addAttribute("values",settings.values(section));
         model.addAttribute("navbarColors",new java.util.TreeMap<>(SitePresentation.COLORS));
+        model.addAttribute("unionNetworkEnabled",union.networkEnabled());
+        model.addAttribute("unionEnabled",extensions.enabled("yggdrasil-connect"));
         return "admin/settings";
+    }
+
+    @PostMapping("/admin/union/member/{operation:updatelist|updateprivatekey|sync|diagnose}")
+    public String unionOperation(@PathVariable String operation,org.springframework.web.servlet.mvc.support.RedirectAttributes flash) {
+        try {
+            switch(operation) {
+                case "updatelist" -> union.updateList();
+                case "updateprivatekey" -> union.updatePrivateKey();
+                case "sync" -> union.sync();
+                case "diagnose" -> union.request("POST","/diagnose",Map.of());
+            }
+            flash.addFlashAttribute("unionMessage","联盟操作已完成");
+        } catch(org.springframework.web.server.ResponseStatusException error) { flash.addFlashAttribute("error",error.getReason()); }
+        return "redirect:/admin/extensions/config#union";
     }
 
     @PostMapping("/admin/{section:options|score|customize|resource}")

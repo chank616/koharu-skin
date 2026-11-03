@@ -18,3 +18,8 @@ CREATE TABLE IF NOT EXISTS koharu_ygg_sessions (
     expires_at BIGINT NOT NULL,
     INDEX ygg_sessions_expiry (expires_at)
 );
+CREATE TABLE IF NOT EXISTS koharu_union_nonces (
+    nonce VARBINARY(128) PRIMARY KEY,
+    expires_at BIGINT NOT NULL,
+    INDEX union_nonces_expiry (expires_at)
+);

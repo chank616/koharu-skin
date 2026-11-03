@@ -33,6 +33,9 @@ public class AdminSettings {
             case "resource" -> List.of(new Group("resources","静态资源 CDN",List.of(
                     new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))));
             case "extensions" -> List.of(
+                    new Group("union","联合认证",List.of(
+                            new Field("union_api_root","联盟 API 根地址","text",""),
+                            new Field("union_member_key","成员密钥（留空保留现有密钥）","password",""))),
                     new Group("skin-api-extension","皮肤 API 扩展",List.of(
                             new Field("skin_api_tokens","API 令牌（至少 16 字符，多个用逗号分隔；留空保留现有令牌）","password",""))),
                     new Group("yggdrasil-api","外置登录",List.of(
@@ -164,6 +167,19 @@ public class AdminSettings {
         }
         if(groupKey.equals("homepage")&&Integer.parseInt(values.get("copyright_prefer"))>6)
             throw new BusinessException("驱动说明样式应为 0～6");
+        if(groupKey.equals("union")) {
+            String root=values.get("union_api_root").trim().replaceAll("/+$","");
+            try {
+                var uri=java.net.URI.create(root);
+                if(!("http".equals(uri.getScheme())||"https".equals(uri.getScheme()))||uri.getHost()==null||uri.getUserInfo()!=null||uri.getQuery()!=null||uri.getFragment()!=null)
+                    throw new IllegalArgumentException();
+            } catch(IllegalArgumentException error) { throw new BusinessException("请填写完整的 HTTP 或 HTTPS 联盟 API 根地址"); }
+            values.put("union_api_root",root);
+            String key=values.get("union_member_key").trim();
+            if(key.isEmpty()) key=options.text("union_member_key","");
+            if(key.isBlank()) throw new BusinessException("请填写联盟成员密钥");
+            values.put("union_member_key",key);
+        }
         if(groupKey.equals("recaptcha")) {
             String sitekey=values.get("recaptcha_sitekey").trim();
             String secret=values.get("recaptcha_secretkey").trim();

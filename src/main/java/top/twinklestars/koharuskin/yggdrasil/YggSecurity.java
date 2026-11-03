@@ -11,6 +11,13 @@ import java.util.List;
 
 @Configuration
 public class YggSecurity {
+    @Bean @Order(0)
+    SecurityFilterChain unionMemberSecurity(HttpSecurity http) throws Exception {
+        return http.securityMatcher("/api/union/member", "/api/union/member/**")
+                .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .requestCache(cache->cache.disable()).csrf(csrf->csrf.disable())
+                .authorizeHttpRequests(auth->auth.anyRequest().permitAll()).build();
+    }
     @Bean @Order(1)
     SecurityFilterChain yggdrasil(HttpSecurity http) throws Exception {
         return http.securityMatcher("/api/yggdrasil/**")

@@ -45,6 +45,21 @@
                 </div>
             </div><div class="card-footer"><button class="btn btn-primary" type="submit">保存设置</button></div>
         </form>
+        <div class="card" th:if="${section=='extensions/config'}">
+            <div class="card-header"><h2 class="card-title">联盟成员操作</h2></div>
+            <div class="card-body">
+                <p th:unless="${unionNetworkEnabled}" class="text-warning">当前环境已关闭联盟网络连接。</p>
+                <p th:unless="${unionEnabled}">请先在官方扩展中启用联合认证。</p>
+                <p th:if="${unionMessage}" th:text="${unionMessage}" class="alert alert-success"></p>
+                <p>更新签名密钥会使用联盟提供的私钥；同步角色会向联盟提交本站角色名和 UUID。</p>
+                <div class="d-flex flex-wrap">
+                    <form class="mr-2 mb-2" method="post" th:action="@{/admin/union/member/updatelist}"><button class="btn btn-primary" th:disabled="${!unionNetworkEnabled or !unionEnabled}">更新成员列表</button></form>
+                    <form class="mr-2 mb-2" method="post" th:action="@{/admin/union/member/updateprivatekey}"><button class="btn btn-warning" th:disabled="${!unionNetworkEnabled or !unionEnabled}">更新签名密钥</button></form>
+                    <form class="mr-2 mb-2" method="post" th:action="@{/admin/union/member/sync}"><button class="btn btn-primary" th:disabled="${!unionNetworkEnabled or !unionEnabled}">同步角色</button></form>
+                    <form class="mr-2 mb-2" method="post" th:action="@{/admin/union/member/diagnose}"><button class="btn btn-outline-primary" th:disabled="${!unionNetworkEnabled or !unionEnabled}">连接诊断</button></form>
+                </div>
+            </div>
+        </div>
     </div></section></div>
 </div>
 <th:block th:replace="~{fragments/assets :: scripts}"></th:block>
