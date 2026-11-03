@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('个人资料')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+        <a class="navbar-brand" th:href="@{/user}" th:text="${siteName}"></a>
+        <a class="nav-link" th:href="@{/user}">用户中心</a><a class="nav-link" th:href="@{/user/player}">角色管理</a>
+        <a class="nav-link" th:href="@{/user/closet}">我的衣柜</a><a class="nav-link" th:href="@{/skinlib}">皮肤库</a>
+        <span id="toggle-dark-mode" class="ml-auto mr-3"></span><button id="logout-button" class="btn btn-outline-secondary">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3">个人资料 · <span data-mark="nickname" th:text="${profile.nickname}"></span></h1>
+        <div class="row"><div class="col-md-6">
+            <div class="card card-primary"><div class="card-header"><h2 class="card-title">头像</h2></div>
+                <div class="card-body"><img th:src="@{/avatar/{tid}(tid=${profile.avatar})}" alt="User Image" width="80" height="80" class="float-left mr-3">
+                    <p>在衣柜中打开皮肤菜单，选择“设为头像”，即可使用该皮肤的头部作为头像。</p></div>
+                <div class="card-footer"><button id="reset-avatar" class="btn btn-primary">重置头像</button></div>
+            </div>
+            <form id="change-password" class="card card-warning" method="post">
+                <div class="card-header"><h2 class="card-title">更改密码</h2></div><div class="card-body">
+                    <div class="form-group"><label for="old-password">当前密码</label><input id="old-password" name="oldPassword" type="password" class="form-control" required minlength="6" maxlength="32" autocomplete="current-password"></div>
+                    <div class="form-group"><label for="new-password">新密码</label><input id="new-password" name="newPassword" type="password" class="form-control" required minlength="8" maxlength="32" autocomplete="new-password"></div>
+                    <div class="form-group"><label for="confirm-password">确认新密码</label><input id="confirm-password" name="confirm" type="password" class="form-control" required minlength="8" maxlength="32" autocomplete="new-password"></div>
+                </div><div class="card-footer"><button type="submit" class="btn btn-primary">更新密码</button></div>
+            </form>
+        </div><div class="col-md-6">
+            <form id="change-nickname" class="card card-primary" method="post">
+                <div class="card-header"><h2 class="card-title">更改昵称</h2></div><div class="card-body">
+                    <p th:if="${singlePlayer}">昵称与角色名保持一致，请在<a th:href="@{/user/player}">角色管理</a>中更改。</p>
+                    <label for="nickname">昵称</label><input id="nickname" name="nickname" class="form-control" required maxlength="50" th:value="${profile.nickname}" th:disabled="${singlePlayer}">
+                </div><div class="card-footer"><button type="submit" class="btn btn-primary" th:disabled="${singlePlayer}">更新昵称</button></div>
+            </form>
+            <form id="change-email" class="card card-warning" method="post">
+                <div class="card-header"><h2 class="card-title">换绑邮箱</h2></div><div class="card-body">
+                    <div class="form-group"><label for="new-email">新邮箱</label><input id="new-email" name="email" type="email" class="form-control" required maxlength="100" th:value="${profile.email}" autocomplete="email"></div>
+                    <div class="form-group"><label for="email-password">当前密码</label><input id="email-password" name="password" type="password" class="form-control" required minlength="6" maxlength="32" autocomplete="current-password"></div>
+                    <p class="text-muted mb-0">换绑后需要重新登录并验证新邮箱。</p>
+                </div><div class="card-footer"><button type="submit" class="btn btn-primary">更新邮箱</button></div>
+            </form>
+            <div class="card card-danger"><div class="card-header"><h2 class="card-title">注销账号</h2></div><div class="card-body">
+                <p th:if="${profile.permission >= 1}">拥有管理员权限的账号不能注销。</p>
+                <p th:unless="${profile.permission >= 1}">注销将永久删除账号和角色，已上传的材质会保留。</p>
+                <button class="btn btn-danger" data-toggle="modal" data-target="#modal-delete-account" th:disabled="${profile.permission >= 1}">注销我的账号</button>
+            </div></div>
+        </div></div>
+    </div></section></div>
+</div>
+<form id="modal-delete-account" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="delete-title">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content bg-danger">
+        <div class="modal-header"><h2 id="delete-title" class="modal-title h5">确认注销账号</h2><button type="button" class="close" data-dismiss="modal" aria-label="关闭">×</button></div>
+        <div class="modal-body"><p>此操作不可恢复。账号和角色将被删除，你上传的材质仍会保留。</p>
+            <label for="delete-password">输入当前密码以确认</label><input id="delete-password" name="password" type="password" class="form-control" required minlength="6" maxlength="32" autocomplete="current-password"></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-light" data-dismiss="modal">取消</button><button type="submit" class="btn btn-outline-light">确认注销</button></div>
+    </div></div>
+</form>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body>
+</html>

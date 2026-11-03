@@ -19,7 +19,8 @@ public class OfficialExtensions {
 
     public boolean enabled(String name) {
         var configured = json.readTree(options.text("plugins_enabled", "[]"));
-        return configured.isObject() ? configured.has(name) : configured.valueStream().anyMatch(item -> item.asString().equals(name));
+        return configured.isObject() ? configured.has(name) : configured.valueStream()
+                .anyMatch(item -> (item.isObject() ? item.path("name").asString() : item.asString()).equals(name));
     }
 
     public void checkEmail(String email) {

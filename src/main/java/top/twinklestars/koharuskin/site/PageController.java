@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import top.twinklestars.koharuskin.account.AccountMailService;
 import top.twinklestars.koharuskin.account.BusinessException;
+import top.twinklestars.koharuskin.account.ProfileMapper;
+import top.twinklestars.koharuskin.extension.OfficialExtensions;
 
 import java.io.IOException;
 import java.util.Map;
@@ -32,9 +34,12 @@ public class PageController {
     private final TextureService textures;
     private final AccountMapper accounts;
     private final AccountMailService mail;
+    private final ProfileMapper profiles;
+    private final OfficialExtensions extensions;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
-                          TextureService textures, AccountMapper accounts, AccountMailService mail) throws IOException {
+                          TextureService textures, AccountMapper accounts, AccountMailService mail,
+                          ProfileMapper profiles, OfficialExtensions extensions) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -42,9 +47,24 @@ public class PageController {
         this.textures = textures;
         this.accounts = accounts;
         this.mail = mail;
+        this.profiles = profiles;
+        this.extensions = extensions;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
+    }
+
+    @org.springframework.web.bind.annotation.ModelAttribute
+    public void appearance(Model model, @AuthenticationPrincipal AccountUser user) {
+        model.addAttribute("darkMode", user != null && profiles.find(user.uid()).isDarkMode());
+    }
+
+    @GetMapping("/user/profile")
+    public String profile(Model model, @AuthenticationPrincipal AccountUser user) {
+        page(model, "user/profile", Map.of());
+        model.addAttribute("profile", profiles.find(user.uid()));
+        model.addAttribute("singlePlayer", extensions.enabled("single-player-limit"));
+        return "user/profile";
     }
 
     @GetMapping("/auth/register")
