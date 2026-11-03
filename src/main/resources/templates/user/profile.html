@@ -7,7 +7,7 @@
         <a class="navbar-brand" th:href="@{/user}" th:text="${siteName}"></a>
         <a class="nav-link" th:href="@{/user}">用户中心</a><a class="nav-link" th:href="@{/user/player}">角色管理</a>
         <a class="nav-link" th:href="@{/user/closet}">我的衣柜</a><a class="nav-link" th:href="@{/skinlib}">皮肤库</a>
-        <span id="toggle-dark-mode" class="ml-auto mr-3"></span><button id="logout-button" class="btn btn-outline-secondary">退出登录</button>
+        <span id="toggle-dark-mode" class="ml-auto mr-3"></span><th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary">退出登录</button>
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <h1 class="h3 mb-3">个人资料 · <span data-mark="nickname" th:text="${profile.nickname}"></span></h1>

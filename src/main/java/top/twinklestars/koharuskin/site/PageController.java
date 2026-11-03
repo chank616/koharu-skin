@@ -38,13 +38,15 @@ public class PageController {
     private final OfficialExtensions extensions;
     private final top.twinklestars.koharuskin.admin.AdminSettings settings;
     private final top.twinklestars.koharuskin.report.ReportService reports;
+    private final top.twinklestars.koharuskin.notification.NotificationService notifications;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
                           TextureService textures, AccountMapper accounts, AccountMailService mail,
                           ProfileMapper profiles, OfficialExtensions extensions, top.twinklestars.koharuskin.admin.AdminSettings settings,
-                          top.twinklestars.koharuskin.report.ReportService reports) throws IOException {
+                          top.twinklestars.koharuskin.report.ReportService reports,
+                          top.twinklestars.koharuskin.notification.NotificationService notifications) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -56,6 +58,7 @@ public class PageController {
         this.extensions = extensions;
         this.settings = settings;
         this.reports = reports;
+        this.notifications = notifications;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -64,6 +67,7 @@ public class PageController {
     @org.springframework.web.bind.annotation.ModelAttribute
     public void appearance(Model model, @AuthenticationPrincipal AccountUser user) {
         model.addAttribute("darkMode", user != null && profiles.find(user.uid()).isDarkMode());
+        model.addAttribute("notifications",user==null?null:notifications.unreadJson(user.uid()));
     }
 
     @GetMapping("/user/profile")
@@ -80,6 +84,14 @@ public class PageController {
         page(model,"admin/users",Map.of("currentUser",profiles.find(user.uid())));
         model.addAttribute("title","用户管理");
         return "admin/management";
+    }
+
+    @GetMapping("/admin")
+    public String admin(Model model) {
+        page(model,"admin",Map.of());
+        if(!model.containsAttribute("notificationForm")) model.addAttribute("notificationForm",
+                new top.twinklestars.koharuskin.notification.NotificationController.Send("all",null,"","",""));
+        return "admin/index";
     }
 
     @GetMapping("/admin/players")

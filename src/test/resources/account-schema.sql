@@ -58,3 +58,13 @@ CREATE TABLE IF NOT EXISTS reports (
     status INT NOT NULL,
     report_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS notifications (
+    id CHAR(36) PRIMARY KEY,
+    type VARCHAR(255) NOT NULL,
+    notifiable_type VARCHAR(255) NOT NULL,
+    notifiable_id BIGINT NOT NULL,
+    data TEXT NOT NULL,
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);

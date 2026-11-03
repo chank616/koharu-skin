@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('管理后台')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
+        <a th:href="@{/admin/users}" class="nav-link">用户管理</a><a th:href="@{/admin/players}" class="nav-link">角色管理</a>
+        <a th:href="@{/admin/reports}" class="nav-link">举报审核</a><a th:href="@{/admin/options}" class="nav-link">站点设置</a>
+        <a th:href="@{/admin/score}" class="nav-link">积分设置</a><a th:href="@{/admin/extensions}" class="nav-link">官方扩展</a>
+        <th:block th:replace="~{fragments/notifications :: bell}"></th:block>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3">管理后台</h1>
+        <div class="alert alert-success" role="status" th:if="${notificationSent}">通知发送成功</div>
+        <div class="alert alert-danger" role="alert" th:if="${notificationError != null}" th:text="${notificationError}"></div>
+        <form class="card" method="post" th:action="@{/admin/notifications/send}" th:object="${notificationForm}">
+            <div class="card-header"><h2 class="card-title">发送站内通知</h2></div>
+            <div class="card-body">
+                <fieldset class="form-group"><legend class="h6">接收者</legend>
+                    <label class="d-block"><input type="radio" th:field="*{receiver}" value="all" required> 全部用户</label>
+                    <label class="d-block"><input type="radio" th:field="*{receiver}" value="normal" required> 普通用户</label>
+                    <label class="d-block"><input type="radio" th:field="*{receiver}" value="uid" required> 指定用户 ID</label>
+                    <input type="number" th:field="*{uid}" min="1" class="form-control mb-2" aria-label="用户 ID">
+                    <label class="d-block"><input type="radio" th:field="*{receiver}" value="email" required> 指定邮箱</label>
+                    <input type="email" th:field="*{email}" class="form-control" aria-label="邮箱">
+                </fieldset>
+                <div class="form-group"><label for="title">标题</label><input id="title" th:field="*{title}" class="form-control" required maxlength="20"></div>
+                <div class="form-group"><label for="content">正文（支持 Markdown）</label><textarea id="content" th:field="*{content}" class="form-control" rows="6"></textarea></div>
+            </div><div class="card-footer"><button type="submit" class="btn btn-primary">发送通知</button></div>
+        </form>
+    </div></section></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body></html>

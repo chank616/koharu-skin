@@ -5,7 +5,7 @@
 <div class="wrapper">
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
         <div class="container"><a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
-            <a th:href="@{/user}" class="nav-link">用户中心</a><a th:href="@{/user/closet}" class="nav-link">我的衣柜</a><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button></div>
+            <a th:href="@{/user}" class="nav-link">用户中心</a><a th:href="@{/user/closet}" class="nav-link">我的衣柜</a><th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button></div>
     </nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <h1 class="h3 mb-3">角色管理</h1>

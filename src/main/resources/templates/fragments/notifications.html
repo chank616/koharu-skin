@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><body>
+<ul th:fragment="bell" th:if="${notifications != null}" class="navbar-nav ml-auto">
+    <li class="nav-item dropdown" data-t="暂无未读通知" th:attr="data-notifications=${notifications}"></li>
+</ul>
+</body></html>
