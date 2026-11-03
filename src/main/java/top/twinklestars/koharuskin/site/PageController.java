@@ -49,6 +49,7 @@ public class PageController {
     private final org.springframework.security.web.context.SecurityContextRepository contexts;
     private final top.twinklestars.koharuskin.account.JsonRememberMeServices remember;
     private final top.twinklestars.koharuskin.yggdrasil.UnionMember union;
+    private final top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -65,7 +66,8 @@ public class PageController {
                           top.twinklestars.koharuskin.account.ProfileService profileService,
                           org.springframework.security.web.context.SecurityContextRepository contexts,
                           top.twinklestars.koharuskin.account.JsonRememberMeServices remember,
-                          top.twinklestars.koharuskin.yggdrasil.UnionMember union) throws IOException {
+                          top.twinklestars.koharuskin.yggdrasil.UnionMember union,
+                          top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -88,6 +90,7 @@ public class PageController {
         this.contexts=contexts;
         this.remember=remember;
         this.union=union;
+        this.unionProfiles=unionProfiles;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -100,8 +103,22 @@ public class PageController {
         model.addAttribute("xiqueerEnabled",user!=null&&extensions.enabled("xiqueer-verification"));
         model.addAttribute("henanEnabled",extensions.enabled("auth-henan"));
         model.addAttribute("hitokotoEnabled",extensions.enabled("hitokoto"));
+        model.addAttribute("unionEnabled",extensions.enabled("yggdrasil-connect"));
         model.addAttribute("favicon",presentation.favicon());
         model.addAttribute("siteAssets",presentation.assets());
+    }
+
+    @GetMapping({"/union","/union/"})
+    public String unionProfiles(Model model,@AuthenticationPrincipal AccountUser user) {
+        union.requireEnabled();
+        page(model,"union",Map.of());
+        model.addAttribute("unionBackends",unionProfiles.backends());
+        model.addAttribute("unionNetworkEnabled",union.networkEnabled());
+        model.addAttribute("unionProfiles",java.util.List.of());
+        if(!union.networkEnabled()) model.addAttribute("unionError","当前环境已关闭联盟网络连接。");
+        else try { model.addAttribute("unionProfiles",unionProfiles.profiles(user.uid())); }
+        catch(org.springframework.web.server.ResponseStatusException error) { model.addAttribute("unionError",error.getReason()); }
+        return "user/union";
     }
 
     @GetMapping("/user/oauth/manage")

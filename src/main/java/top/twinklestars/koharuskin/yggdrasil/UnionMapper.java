@@ -11,6 +11,8 @@ public interface UnionMapper {
     void remap(String name,String uuid);
     @Select("SELECT u.email FROM players p JOIN users u ON u.uid=p.uid WHERE p.name=#{name} ORDER BY p.pid LIMIT 1")
     String email(String name);
+    @Select("SELECT COUNT(*) FROM players p JOIN uuid u ON p.name=u.name WHERE p.uid=#{uid} AND REPLACE(u.uuid,'-','')=#{uuid}")
+    int owned(long uid,String uuid);
     @Delete("DELETE FROM koharu_union_nonces WHERE expires_at<=#{now}")
     void expireNonces(long now);
     @Insert("INSERT IGNORE INTO koharu_union_nonces(nonce,expires_at) VALUES(#{nonce},#{expires})")

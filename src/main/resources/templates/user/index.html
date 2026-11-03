@@ -12,6 +12,7 @@
             <a class="nav-link" th:href="@{/user/profile}">个人资料</a>
             <a class="nav-link" th:href="@{/user/reports}">我的举报</a>
             <a class="nav-link" th:href="@{/user/oauth/manage}">OAuth 应用</a>
+            <a class="nav-link" th:if="${unionEnabled}" th:href="@{/union}">联合认证</a>
             <a class="nav-link" th:if="${admin}" th:href="@{/admin}">管理后台</a>
             <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" type="button" class="btn btn-outline-secondary ml-auto">退出登录</button>
         </div>

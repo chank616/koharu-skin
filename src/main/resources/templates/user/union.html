@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('联合认证')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
+        <a th:href="@{/user}" class="nav-link">用户中心</a><a th:href="@{/user/player}" class="nav-link">角色管理</a>
+        <a th:href="@{/skinlib}" class="nav-link">皮肤库</a>
+        <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3">联合认证</h1>
+        <div class="alert alert-danger" th:if="${unionError}" th:text="${unionError}"></div>
+        <div id="union-message" class="alert alert-danger d-none" role="alert"></div>
+        <div class="row"><div class="col-md-8"><div class="card"><div class="card-body">
+            <p>绑定后，在使用联盟认证的服务器中使用主角色的名称和 UUID，皮肤和披风仍使用当前登录角色的材质。重名角色会获得联盟映射名称。</p>
+            <p>绑定码在两分钟内有效，请只用于关联你自己的角色。同步 UUID 会影响所有关联站点，无法撤销；未使用联盟认证的服务器可能不再识别原有玩家数据，请先确认需要保留的身份。</p>
+            <p th:if="${unionNetworkEnabled}">本站安全级别：<span id="union-security-level">读取中</span></p>
+            <p class="text-muted">SL3：已接入联合黑名单，并获得高信任评级；SL1：已接入联合黑名单；SL0：未接入联合黑名单。实际评级由联盟返回。</p>
+        </div></div></div><div class="col-md-4" th:if="${unionNetworkEnabled}"><div class="card"><div class="card-body" id="union-description"></div></div></div></div>
+        <div class="alert alert-info" th:if="${unionError==null and #lists.isEmpty(unionProfiles)}">暂无角色，请先在角色管理中添加角色。</div>
+        <section class="card" th:each="profile : ${unionProfiles}">
+            <div class="card-header"><h2 class="card-title" th:text="${profile.name}"></h2></div>
+            <div class="card-body table-responsive p-0"><table class="table table-striped">
+                <thead><tr><th>联盟角色名</th><th>成员站点</th><th>UUID</th><th>身份</th><th></th></tr></thead>
+                <tbody>
+                    <tr th:with="remote=${profile.self}"><td th:text="${remote.name}"></td><td><span th:text="${remote.backendCode}"></span><br><span th:attr="data-union-backend=${remote.backend}" th:text="${remote.backend}"></span></td>
+                        <td>当前：<code th:text="${remote.uuid}"></code><br>映射：<code th:text="${remote.mappedUuid}"></code></td><td>本站角色</td>
+                        <td><form data-union-form method="post" th:action="@{/union/remapuuid}" data-confirm="确认申请这个 UUID？这可能改变游戏服务器识别的玩家身份。"><input type="hidden" name="me" th:value="${profile.uuid}"><input type="hidden" name="target" th:value="${remote.mappedUuid}"><button class="btn btn-outline-danger btn-sm">使用映射 UUID</button></form></td></tr>
+                    <tr th:each="remote : ${profile.bound}"><td th:text="${remote.name}"></td><td><span th:text="${remote.backendCode}"></span><br><span th:attr="data-union-backend=${remote.backend}" th:text="${remote.backend}"></span></td>
+                        <td>当前：<code th:text="${remote.uuid}"></code><br>映射：<code th:text="${remote.mappedUuid}"></code></td><td th:text="${remote.bindStatus==0?'主角色':'已绑定角色'}"></td>
+                        <td><form data-union-form method="post" th:action="@{/union/remapuuid}" data-confirm="确认使用这个已关联角色的映射 UUID？"><input type="hidden" name="me" th:value="${profile.uuid}"><input type="hidden" name="target" th:value="${remote.mappedUuid}"><button class="btn btn-outline-danger btn-sm">使用映射 UUID</button></form></td></tr>
+                </tbody>
+            </table></div>
+            <div class="card-body" th:unless="${#lists.isEmpty(profile.duplicates)}"><h3 class="h6">其他站点的同名角色</h3><ul><li th:each="duplicate : ${profile.duplicates}"><span th:text="${duplicate.name}"></span> · <span th:text="${duplicate.backendCode}"></span></li></ul></div>
+            <div class="card-footer">
+                <form th:if="${profile.self.bindStatus>0}" data-union-form method="post" th:action="@{/union/unbind}" data-confirm="确认解除此角色的跨站绑定？"><input type="hidden" name="uuid" th:value="${profile.uuid}"><button class="btn btn-danger">解除绑定</button></form>
+                <th:block th:unless="${profile.self.bindStatus>0}">
+                    <form data-union-form method="post" th:action="@{/union/bindto}" class="mb-3"><input type="hidden" name="uuid" th:value="${profile.uuid}"><label th:for="${'binding-'+profile.uuid}">其他角色提供的绑定码</label><div class="input-group"><input class="form-control" name="token" th:id="${'binding-'+profile.uuid}" autocomplete="off" required><div class="input-group-append"><button class="btn btn-primary">绑定到该角色</button></div></div></form>
+                    <form data-union-form data-token-result method="post" th:action="@{/union/bind}"><input type="hidden" name="uuid" th:value="${profile.uuid}"><button class="btn btn-outline-primary">生成此角色的绑定码</button><output class="ml-3 text-break" aria-live="polite"></output></form>
+                </th:block>
+            </div>
+        </section>
+        <section class="card"><div class="card-header"><h2 class="card-title">联盟成员站点</h2></div><div class="card-body table-responsive p-0"><table class="table table-striped"><thead><tr><th>编号</th><th>站点地址</th><th>名称</th></tr></thead><tbody><tr th:each="backend : ${unionBackends}"><td th:text="${backend.code}"></td><td><a th:href="${backend.root}" th:text="${backend.root}" rel="noreferrer"></a></td><td th:attr="data-union-backend=${backend.root}" th:text="${backend.root}"></td></tr><tr th:if="${#lists.isEmpty(unionBackends)}"><td colspan="3">暂无成员列表，请联系管理员同步。</td></tr></tbody></table></div></section>
+    </div></section></div>
+</div>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+<script th:if="${unionNetworkEnabled}" th:src="@{/official/union.js}"></script>
+</body></html>
