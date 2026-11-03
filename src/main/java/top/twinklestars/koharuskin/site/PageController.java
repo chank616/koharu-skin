@@ -69,6 +69,13 @@ public class PageController {
         return "user/profile";
     }
 
+    @GetMapping("/admin/users")
+    public String adminUsers(Model model, @AuthenticationPrincipal AccountUser user) {
+        page(model,"admin/users",Map.of("currentUser",profiles.find(user.uid())));
+        model.addAttribute("title","用户管理");
+        return "admin/management";
+    }
+
     @GetMapping("/auth/register")
     public String register(Model model, @AuthenticationPrincipal AccountUser user) {
         if (user != null) return "redirect:/user";
@@ -98,6 +105,7 @@ public class PageController {
         }
         page(model, "user", Map.of("unverified", options.enabled("require_verification", false) && !accounts.verified(user.uid())));
         model.addAttribute("account", Map.of("uid", user.uid(), "nickname", user.nickname(), "email", user.email()));
+        model.addAttribute("admin", user.permission()>=1);
         model.addAttribute("rates", Map.of("角色", options.number("score_per_player", 100), "公开材质 / KB", options.number("score_per_storage", 1),
                 "私密材质 / KB", options.number("private_score_per_storage", 10), "衣柜收藏", options.number("score_per_closet_item", 0)));
         return "user/index";

@@ -10,6 +10,7 @@
             <a class="nav-link" th:href="@{/user/closet}">我的衣柜</a>
             <a class="nav-link" th:href="@{/skinlib}">皮肤库</a>
             <a class="nav-link" th:href="@{/user/profile}">个人资料</a>
+            <a class="nav-link" th:if="${admin}" th:href="@{/admin/users}">管理后台</a>
             <button id="logout-button" type="button" class="btn btn-outline-secondary ml-auto">退出登录</button>
         </div>
     </nav>
