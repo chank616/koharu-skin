@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head(${operation=='register'?'统一认证注册':'统一认证登录'})}"></head>
+<body class="hold-transition login-page"><div class="login-box">
+    <div class="login-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
+    <div class="card"><div class="card-body login-card-body">
+        <h1 class="h5 text-center mb-3" th:text="${operation=='register'?'统一认证注册':'统一认证登录'}"></h1>
+        <p class="text-muted">学校密码仅用于学校身份认证。皮肤站和启动器使用单独的皮肤站密码。</p>
+        <div th:if="${henanError != null}" class="alert alert-warning" role="alert" th:text="${henanError}"></div>
+        <form method="post" th:action="@{/auth/{operation}/henan(operation=${operation})}">
+            <div class="form-group"><label for="school">学校</label><select id="school" name="school" class="form-control" required>
+                <option value="">请选择学校</option><option th:each="school : ${schools}" th:value="${school.key}" th:text="${school.value}" th:selected="${henanForm.school==school.key}"></option>
+            </select></div>
+            <div class="form-group"><label for="identification">学号</label><input id="identification" name="identification" class="form-control" autocomplete="username" required maxlength="255" th:value="${henanForm.identification}"></div>
+            <div class="form-group"><label for="password">学校密码</label><input id="password" name="password" type="password" class="form-control" autocomplete="current-password" required></div>
+            <th:block th:if="${operation=='register'}">
+                <div class="form-group"><label for="site-password">皮肤站密码</label><input id="site-password" name="site_password" type="password" class="form-control" autocomplete="new-password" minlength="8" maxlength="32" required></div>
+                <div class="form-group"><label for="player-name">角色名</label><input id="player-name" name="player_name" class="form-control" autocomplete="off" required th:value="${henanForm.player_name}"></div>
+                <div class="form-group"><label for="captcha">图片验证码</label><div class="input-group"><input id="captcha" name="captcha" class="form-control" autocomplete="off" required>
+                    <div class="input-group-append"><img th:src="@{/auth/captcha}" alt="图片验证码" title="点击刷新验证码" style="height:38px;cursor:pointer" onclick="this.src='/auth/captcha?v='+Date.now()"></div>
+                </div></div>
+            </th:block>
+            <button type="submit" class="btn btn-primary btn-block" th:text="${operation=='register'?'验证并注册':'登录'}"></button>
+        </form>
+        <div class="d-flex justify-content-between mt-3">
+            <a th:href="@{/auth/{operation}(operation=${operation})}" th:text="${operation=='register'?'普通注册':'普通登录'}"></a>
+            <a th:href="@{/auth/{operation}/henan(operation=${operation=='register'?'login':'register'})}" th:text="${operation=='register'?'已有账号，去登录':'首次使用，去注册'}"></a>
+        </div>
+    </div></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block></body></html>

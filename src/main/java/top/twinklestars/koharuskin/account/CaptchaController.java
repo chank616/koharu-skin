@@ -36,7 +36,7 @@ public class CaptchaController {
         ImageIO.write(image, "png", response.getOutputStream());
     }
 
-    static boolean verify(HttpSession session, String submitted) {
+    public static boolean verify(HttpSession session, String submitted) {
         String answer = (String) session.getAttribute("captcha");
         session.removeAttribute("captcha");
         return answer != null && answer.equalsIgnoreCase(submitted);

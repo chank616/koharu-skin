@@ -4,7 +4,7 @@
 <body class="hold-transition register-page">
 <div class="register-box">
     <div class="register-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
-    <div class="card"><div class="card-body register-card-body"><main></main></div></div>
+    <div class="card"><div class="card-body register-card-body"><main></main><a th:if="${henanEnabled}" th:href="@{/auth/register/henan}" class="d-block mt-2">河南高校统一认证注册</a></div></div>
 </div>
 <th:block th:replace="~{fragments/assets :: scripts}"></th:block>
 </body>

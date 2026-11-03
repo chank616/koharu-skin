@@ -41,6 +41,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.notification.NotificationService notifications;
     private final top.twinklestars.koharuskin.admin.AdminDashboard dashboard;
     private final top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer;
+    private final top.twinklestars.koharuskin.extension.henan.HenanLogin henan;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -50,7 +51,8 @@ public class PageController {
                           top.twinklestars.koharuskin.report.ReportService reports,
                           top.twinklestars.koharuskin.notification.NotificationService notifications,
                           top.twinklestars.koharuskin.admin.AdminDashboard dashboard,
-                          top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer) throws IOException {
+                          top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer,
+                          top.twinklestars.koharuskin.extension.henan.HenanLogin henan) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -65,6 +67,7 @@ public class PageController {
         this.notifications = notifications;
         this.dashboard = dashboard;
         this.xiqueer = xiqueer;
+        this.henan = henan;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -75,6 +78,7 @@ public class PageController {
         model.addAttribute("darkMode", user != null && profiles.find(user.uid()).isDarkMode());
         model.addAttribute("notifications",user==null?null:notifications.unreadJson(user.uid()));
         model.addAttribute("xiqueerEnabled",user!=null&&extensions.enabled("xiqueer-verification"));
+        model.addAttribute("henanEnabled",extensions.enabled("auth-henan"));
     }
 
     @GetMapping("/user/profile")
@@ -183,6 +187,25 @@ public class PageController {
         page(model, "auth/register", Map.of("player", options.enabled("register_with_player_name", true),
                 "recaptcha", "", "invisible", false));
         return "auth/register";
+    }
+
+    @GetMapping("/auth/{operation:login|register}/henan")
+    public String henan(Model model,@PathVariable String operation,@AuthenticationPrincipal AccountUser user) {
+        henan.requireEnabled(); if(user!=null) return "redirect:/user";
+        page(model,"auth/"+operation+"/henan",Map.of()); model.addAttribute("operation",operation);
+        model.addAttribute("schools",top.twinklestars.koharuskin.extension.henan.HenanLogin.SCHOOLS);
+        if(!model.containsAttribute("henanForm")) model.addAttribute("henanForm",Map.of("school","","identification","","player_name",""));
+        return "auth/henan";
+    }
+    @GetMapping("/auth/mfa/henan/{token:[a-f0-9]{64}}")
+    public String henanMfa(Model model,@PathVariable String token,@AuthenticationPrincipal AccountUser user,jakarta.servlet.http.HttpSession session,
+                           org.springframework.web.servlet.mvc.support.RedirectAttributes flash) {
+        henan.requireEnabled(); if(user!=null) return "redirect:/user";
+        var pending=henan.pending(session,token);
+        if(pending==null) { flash.addFlashAttribute("henanError","安全验证已过期，请重新登录"); return "redirect:/auth/login/henan"; }
+        page(model,"auth/mfa/henan",Map.of()); model.addAttribute("token",token);
+        model.addAttribute("destination",pending.destination()); model.addAttribute("sent",pending.sentAt()!=null);
+        return "auth/henan-mfa";
     }
 
     @GetMapping("/")

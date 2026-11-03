@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('短信安全验证')}"></head>
+<body class="hold-transition login-page"><div class="login-box">
+    <div class="login-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
+    <div class="card"><div class="card-body login-card-body">
+        <h1 class="h5 text-center mb-3">短信安全验证</h1>
+        <p>学校要求验证已绑定手机，完成后继续登录或注册。</p>
+        <div class="alert alert-info" th:text="${'接收手机：'+destination}"></div>
+        <div class="alert alert-warning" role="alert" th:if="${henanError != null}" th:text="${henanError}"></div>
+        <div class="alert alert-success" role="status" th:if="${henanMessage != null}" th:text="${henanMessage}"></div>
+        <form method="post" th:action="@{/auth/mfa/henan/{token}/send(token=${token})}"><button type="submit" class="btn btn-outline-primary btn-block mb-3" th:text="${sent?'重新发送短信':'发送短信验证码'}"></button></form>
+        <form method="post" th:action="@{/auth/mfa/henan/{token}/verify(token=${token})}">
+            <div class="form-group"><label for="code">短信验证码</label><input id="code" name="code" class="form-control" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" required autofocus></div>
+            <button type="submit" class="btn btn-primary btn-block">验证并继续</button>
+        </form>
+        <form method="post" th:action="@{/auth/mfa/henan/{token}/cancel(token=${token})}"><button type="submit" class="btn btn-link btn-block mt-2">取消验证</button></form>
+    </div></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block></body></html>
