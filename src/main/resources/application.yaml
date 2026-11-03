@@ -1,6 +1,27 @@
 spring:
+  config:
+    import: optional:file:./application-local.properties
   application:
     name: koharu-skin
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/koharu_skin}
+    username: ${DB_USERNAME:koharu_skin}
+    password: ${DB_PASSWORD:}
   threads:
     virtual:
       enabled: true
+
+server:
+  servlet:
+    session:
+      timeout: 120m
+      cookie:
+        http-only: true
+        same-site: lax
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+koharu:
+  remember-key: ${REMEMBER_KEY}

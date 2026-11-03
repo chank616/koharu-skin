@@ -1,4 +1,8 @@
 HELP.md
+application-local.properties
+frontend/node_modules/
+src/main/resources/static/app/
+frontend/*.tsbuildinfo
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

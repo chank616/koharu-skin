@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" th:content="${_csrf.token}">
+    <title th:text="${title + ' - ' + siteName}">Koharu Skin</title>
+    <link rel="stylesheet" th:href="@{/app/style.css}">
+    <script th:inline="javascript">window.blessing = /*[[${blessing}]]*/ {};</script>
+</head>
+<body>
+<th:block th:fragment="scripts">
+    <script th:inline="javascript">
+        const extra = /*[[${extra}]]*/ {};
+        const data = document.createElement('script');
+        data.id = 'blessing-extra';
+        data.type = 'application/json';
+        data.textContent = JSON.stringify(extra);
+        document.body.appendChild(data);
+    </script>
+    <script th:src="@{/app/app.js}"></script>
+</th:block>
+</body>
+</html>
