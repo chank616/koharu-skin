@@ -19,6 +19,8 @@ public class AdminSettings {
     public List<Group> groups(String page) {
         return switch(page) {
             case "extensions" -> List.of(
+                    new Group("skin-api-extension","皮肤 API 扩展",List.of(
+                            new Field("skin_api_tokens","API 令牌（至少 16 字符，多个用逗号分隔；留空保留现有令牌）","password",""))),
                     new Group("yggdrasil-api","外置登录",List.of(
                             new Field("ygg_uuid_algorithm","新角色 UUID 算法（已有 UUID 保留）","uuid","v4"),
                             new Field("ygg_token_expire_1","登录令牌有效期（秒）","number","259200"),
@@ -75,6 +77,7 @@ public class AdminSettings {
         var values=new LinkedHashMap<String,String>();
         for(var group:groups(page)) for(var field:group.fields()) {
             String value=options.text(field.key(),field.fallback());
+            if(field.type().equals("password")) value="";
             if(field.key().startsWith("restricted-email-domains.")) value=String.join("\n",json.readTree(value).valueStream().map(item->item.asString()).toList());
             if(field.type().equals("number")) value=switch(value){case "true"->"1";case "false"->"0";default->value;};
             values.put(field.key(),value);
@@ -129,6 +132,16 @@ public class AdminSettings {
         }
         if(groupKey.equals("restricted-email-domains")) values.replaceAll((key,value)->json.writeValueAsString(
                 value.lines().map(String::trim).filter(line->!line.isEmpty()).map(line->line.toLowerCase(Locale.ROOT)).distinct().toList()));
+        if(groupKey.equals("skin-api-extension")) {
+            String tokens=values.get("skin_api_tokens");
+            if(tokens.isBlank()) values.clear();
+            else {
+                var list=Arrays.stream(tokens.split(",",-1)).map(String::trim).toList();
+                if(list.stream().anyMatch(token->token.length()<16||token.chars().anyMatch(Character::isWhitespace)))
+                    throw new BusinessException("每个 API 令牌至少 16 字符，且不能含空白字符");
+                values.put("skin_api_tokens",String.join(",",list));
+            }
+        }
         options.lockRegistration();
         values.forEach((key,value)-> { if(options.get(key)==null) options.insert(key,value); else options.update(key,value); });
     }

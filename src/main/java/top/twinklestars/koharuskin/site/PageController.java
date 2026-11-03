@@ -103,7 +103,7 @@ public class PageController {
             String view=settings(model,section);
             var entered=new java.util.LinkedHashMap<>(settings.values(section));
             for(var group:settings.groups(section)) if(group.key().equals(option)) for(var field:group.fields())
-                entered.put(field.key(),values.getOrDefault(field.key(),field.type().equals("checkbox")?"false":""));
+                entered.put(field.key(),field.type().equals("password")?"":values.getOrDefault(field.key(),field.type().equals("checkbox")?"false":""));
             model.addAttribute("values",entered);
             return view;
         }

@@ -36,7 +36,7 @@
                         <option value="v4" th:selected="${values[field.key]=='v4'}">随机 UUID（v4）</option>
                         <option value="v3" th:selected="${values[field.key]=='v3'}">离线模式 UUID（v3）</option>
                     </select>
-                    <input th:case="*" class="form-control" th:type="${field.type=='integer'?'number':field.type}" th:id="${field.key}" th:name="${field.key}" th:value="${values[field.key]}" th:min="${field.type=='number'?0:null}">
+                    <input th:case="*" class="form-control" th:type="${field.type=='integer'?'number':field.type}" th:id="${field.key}" th:name="${field.key}" th:value="${values[field.key]}" th:min="${field.type=='number'?0:null}" th:autocomplete="${field.type=='password'?'new-password':null}">
                 </div>
             </div><div class="card-footer"><button class="btn btn-primary" type="submit">保存设置</button></div>
         </form>

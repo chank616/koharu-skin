@@ -48,8 +48,8 @@ class ExtensionTests {
                 .andExpect(model().attribute("blessing",org.hamcrest.Matchers.hasEntry("route","admin/extensions/config")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"yggdrasil-api\"")));
         mvc.perform(get("/admin/plugins/manage").with(user(admin))).andExpect(redirectedUrl("/admin/extensions"));
-        mvc.perform(get("/admin/extensions/data").with(user(admin))).andExpect(jsonPath("$.length()").value(3))
-                .andExpect(jsonPath("$[0].name").value("yggdrasil-api"));
+        mvc.perform(get("/admin/extensions/data").with(user(admin))).andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$[1].name").value("yggdrasil-api"));
         mvc.perform(put("/admin/extensions/yggdrasil-api").with(user(admin)).contentType("application/json").content("{\"enabled\":true}"))
                 .andExpect(status().isForbidden());
         mvc.perform(put("/admin/extensions/yggdrasil-api").with(user(admin)).with(csrf()).contentType("application/json").content("{}"))
