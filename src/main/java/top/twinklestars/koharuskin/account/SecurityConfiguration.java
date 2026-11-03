@@ -23,6 +23,9 @@ import java.util.List;
 @Configuration
 public class SecurityConfiguration {
     @Bean
+    java.time.Clock clock() { return java.time.Clock.systemUTC(); }
+
+    @Bean
     PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean
@@ -52,7 +55,7 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository contexts,
                                             HttpSessionCsrfTokenRepository csrf, JsonRememberMeServices remember,
-                                            @Value("${koharu.remember-key}") String key) throws Exception {
+                                            @Value("${koharu.remember-key}") String key, AccountMapper users) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/auth/**", "/app/**", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/*", "/avatar/*").permitAll()
@@ -60,6 +63,7 @@ public class SecurityConfiguration {
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
                 .securityContext(context -> context.securityContextRepository(contexts))
+                .addFilterBefore(new AccountSessionFilter(users, contexts, key), org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .csrf(config -> config.csrfTokenRepository(csrf))
                 .rememberMe(config -> config.key(key).rememberMeServices(remember))
                 .exceptionHandling(config -> config.authenticationEntryPoint((request, response, error) -> {

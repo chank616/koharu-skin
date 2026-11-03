@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('验证邮箱')}"></head>
+<body class="hold-transition login-page">
+<div class="login-box">
+    <div class="login-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
+    <div class="card"><div class="card-body login-card-body">
+        <h1 class="h5">验证邮箱</h1><p>输入收到此验证邮件的邮箱地址。</p>
+        <form method="post" th:action="@{/auth/verify/{uid}(uid=${verificationUid},expires=${expires},signature=${signature})}">
+            <input class="form-control mb-3" type="email" name="email" placeholder="邮箱地址" maxlength="100" required>
+            <p th:if="${errorMessage}" th:text="${errorMessage}" class="alert alert-warning"></p>
+            <button type="submit" class="btn btn-primary btn-block">确认验证</button>
+        </form>
+    </div></div>
+</div>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body>
+</html>

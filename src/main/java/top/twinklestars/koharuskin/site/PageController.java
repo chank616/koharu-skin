@@ -14,6 +14,10 @@ import top.twinklestars.koharuskin.player.PlayerService;
 import top.twinklestars.koharuskin.texture.TextureService;
 import top.twinklestars.koharuskin.account.AccountMapper;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import top.twinklestars.koharuskin.account.AccountMailService;
+import top.twinklestars.koharuskin.account.BusinessException;
 
 import java.io.IOException;
 import java.util.Map;
@@ -27,15 +31,17 @@ public class PageController {
     private final PlayerService playerService;
     private final TextureService textures;
     private final AccountMapper accounts;
+    private final AccountMailService mail;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
-                          TextureService textures, AccountMapper accounts) throws IOException {
+                          TextureService textures, AccountMapper accounts, AccountMailService mail) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
         this.playerService = playerService;
         this.textures = textures;
         this.accounts = accounts;
+        this.mail = mail;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -62,7 +68,7 @@ public class PageController {
 
     @GetMapping("/user")
     public String user(Model model, @AuthenticationPrincipal AccountUser user) {
-        page(model, "user", Map.of());
+        page(model, "user", Map.of("unverified", options.enabled("require_verification", false) && !accounts.verified(user.uid())));
         model.addAttribute("account", Map.of("uid", user.uid(), "nickname", user.nickname(), "email", user.email()));
         model.addAttribute("rates", Map.of("角色", options.number("score_per_player", 100), "公开材质 / KB", options.number("score_per_storage", 1),
                 "私密材质 / KB", options.number("private_score_per_storage", 10), "衣柜收藏", options.number("score_per_closet_item", 0)));
@@ -126,5 +132,41 @@ public class PageController {
         model.addAttribute("section", "upload");
         model.addAttribute("title", "上传材质");
         return "skinlib/index";
+    }
+
+    @GetMapping("/auth/forgot")
+    public String forgot(Model model) {
+        page(model, "auth/forgot", Map.of("recaptcha", "", "invisible", false));
+        model.addAttribute("title", "找回密码");
+        return "auth/form";
+    }
+
+    @GetMapping("/auth/reset/{uid}")
+    public String reset(Model model, @PathVariable long uid, @RequestParam long expires, @RequestParam String signature) {
+        mail.validate(uid, "reset", expires, signature);
+        page(model, "auth/reset/" + uid, Map.of());
+        model.addAttribute("title", "重置密码");
+        return "auth/form";
+    }
+
+    @GetMapping("/auth/verify/{uid}")
+    public String verify(Model model, @PathVariable long uid, @RequestParam long expires, @RequestParam String signature) {
+        mail.validate(uid, "verify", expires, signature);
+        page(model, "auth/verify/" + uid, Map.of());
+        model.addAttribute("verificationUid", uid);
+        model.addAttribute("expires", expires);
+        model.addAttribute("signature", signature);
+        return "auth/verify";
+    }
+
+    @PostMapping("/auth/verify/{uid}")
+    public String verifyEmail(Model model, @PathVariable long uid, @RequestParam long expires, @RequestParam String signature,
+                              @RequestParam String email) {
+        try { mail.verify(uid, expires, signature, email); }
+        catch (BusinessException error) {
+            model.addAttribute("errorMessage", error.getMessage());
+            return verify(model, uid, expires, signature);
+        }
+        return "redirect:/user";
     }
 }

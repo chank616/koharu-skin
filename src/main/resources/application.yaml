@@ -10,6 +10,11 @@ spring:
   threads:
     virtual:
       enabled: true
+  mail:
+    properties:
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
 server:
   servlet:
@@ -25,3 +30,5 @@ mybatis:
 
 koharu:
   remember-key: ${REMEMBER_KEY}
+  public-url: ${PUBLIC_URL:http://localhost:8080}
+  mail-from: ${MAIL_FROM:noreply@localhost}

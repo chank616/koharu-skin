@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head(${title})}"></head>
+<body class="hold-transition login-page">
+<div class="login-box">
+    <div class="login-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
+    <div class="card"><div class="card-body login-card-body"><h1 class="h5 text-center mb-3" th:text="${title}"></h1><main></main></div></div>
+</div>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body>
+</html>

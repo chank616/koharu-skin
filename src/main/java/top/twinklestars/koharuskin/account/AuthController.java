@@ -26,16 +26,18 @@ public class AuthController {
     private final JsonRememberMeServices remember;
     private final LoginAttempts attempts;
     private final RegistrationService registrations;
+    private final AccountMailService mail;
 
     public AuthController(AuthenticationManager authentication, SecurityContextRepository contexts,
                           SessionAuthenticationStrategy sessions, JsonRememberMeServices remember, LoginAttempts attempts,
-                          RegistrationService registrations) {
+                          RegistrationService registrations, AccountMailService mail) {
         this.authentication = authentication;
         this.contexts = contexts;
         this.sessions = sessions;
         this.remember = remember;
         this.attempts = attempts;
         this.registrations = registrations;
+        this.mail = mail;
     }
 
     @PostMapping("/auth/login")
@@ -65,7 +67,7 @@ public class AuthController {
         if (!CaptchaController.verify(request.getSession(), input.captcha())) throw new BusinessException("请输入正确的验证码");
         var user = registrations.register(input.email(), input.password(), input.nickname(), input.player_name(), request.getRemoteAddr());
         establishSession(UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()), request, response);
-        return Map.of("code", 0, "message", "注册成功");
+        return Map.of("code", 0, "message", mail.afterRegistration(user.uid()));
     }
 
     private void establishSession(org.springframework.security.core.Authentication result,

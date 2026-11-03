@@ -12,6 +12,10 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ValidationErrors {
+    @ExceptionHandler(org.springframework.mail.MailException.class)
+    public Map<String, Object> mailFailure(org.springframework.mail.MailException exception) {
+        return Map.of("code", 1, "message", "邮件发送失败，请稍后重试或联系管理员");
+    }
     @ExceptionHandler(BusinessException.class)
     public Map<String, Object> business(BusinessException exception) {
         return Map.of("code", 1, "message", exception.getMessage());
