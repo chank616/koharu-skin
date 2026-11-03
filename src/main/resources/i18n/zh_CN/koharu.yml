@@ -16,3 +16,6 @@ extensions:
   title: 官方扩展
 union:
   title: 联合认证
+search:
+  title: 搜索语法
+  help: '支持普通关键词、字段:值、比较、and/or/not、括号和 sort 排序。含空格的值用引号包围；日期可写年、年-月、年-月-日或 today。'

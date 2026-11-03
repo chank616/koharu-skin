@@ -23,16 +23,20 @@ const ReportsManagement: React.FC = () => {
 
   const getReports = async () => {
     setIsLoading(true)
-    const { data, last_page }: Paginator<Report> = await fetch.get(
+    const response = await fetch.get<Paginator<Report> | fetch.ResponseBody>(
       '/admin/reports/list',
       {
         q: query,
         page,
       },
     )
-    setTotalPages(last_page)
-    setReports(() => data)
     setIsLoading(false)
+    if ('code' in response) {
+      toast.error(response.message)
+      return
+    }
+    setTotalPages(response.last_page)
+    setReports(() => response.data)
   }
 
   useEffect(() => {
@@ -45,7 +49,8 @@ const ReportsManagement: React.FC = () => {
 
   const handleSubmitQuery = (event: React.FormEvent) => {
     event.preventDefault()
-    getReports()
+    if (page === 1) getReports()
+    else setPage(1)
   }
 
   const handleProceedReport = async (

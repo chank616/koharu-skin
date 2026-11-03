@@ -51,7 +51,7 @@ class AdminPlayersTests {
                 .andExpect(jsonPath("$.data[0].pid").value(805)).andExpect(jsonPath("$.data[0].uid").value(805))
                 .andExpect(jsonPath("$.data[0].tid_skin").value(0)).andExpect(jsonPath("$.data[0].last_modified").isString());
         mvc.perform(get("/admin/players/list").param("q","Managed804").session(admin)).andExpect(jsonPath("$.total").value(1));
-        mvc.perform(get("/admin/players/list").param("q","' OR 1=1 --").session(admin)).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/admin/players/list").param("q","' OR 1=1 --").session(admin)).andExpect(jsonPath("$.code").value(1));
         mvc.perform(get("/admin/players/list").param("page","2").session(admin)).andExpect(jsonPath("$.data.length()").value(0));
     }
 

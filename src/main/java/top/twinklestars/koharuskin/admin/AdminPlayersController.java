@@ -19,8 +19,9 @@ public class AdminPlayersController {
     @GetMapping({"/admin/players/list","/api/admin/players"})
     public Map<String,Object> list(@RequestParam(defaultValue="") String q, @RequestParam(defaultValue="1") int page) {
         int current=Math.max(1,page);
-        long total=players.count(q);
-        return Map.of("data",players.list(q,(current-1L)*10),"current_page",current,"last_page",Math.max(1,(total+9)/10),
+        var query=AdminSearch.parse(AdminSearch.ListType.PLAYERS,q);
+        long total=players.count(query);
+        return Map.of("data",players.list(query,(current-1L)*10),"current_page",current,"last_page",Math.max(1,(total+9)/10),
                 "per_page",10,"total",total);
     }
     @PutMapping({"/admin/players/{pid}/name","/api/admin/players/{pid}/name"})

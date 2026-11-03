@@ -16,3 +16,6 @@ extensions:
   title: Official Extensions
 union:
   title: Federated Authentication
+search:
+  title: Search syntax
+  help: 'Use keywords, field:value, comparisons, and/or/not, parentheses and sort. Quote values containing spaces. Dates accept a year, year-month, year-month-day or today.'

@@ -49,7 +49,7 @@ class AdminUsersTests {
         mvc.perform(get("/admin/users/list").param("page","2").session(admin)).andExpect(jsonPath("$.data.length()").value(4));
         mvc.perform(get("/admin/users/list").param("q","admin704@").session(admin)).andExpect(jsonPath("$.total").value(1));
         mvc.perform(get("/admin/users/list").param("q","703").session(admin)).andExpect(jsonPath("$.data[0].uid").value(703));
-        mvc.perform(get("/admin/users/list").param("q","' OR 1=1 --").session(admin)).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/admin/users/list").param("q","' OR 1=1 --").session(admin)).andExpect(jsonPath("$.code").value(1));
     }
 
     @Test void permissionsCannotBeEscalatedOrChangedForPeersAndSelf() throws Exception {

@@ -37,16 +37,20 @@ const UsersManagement: React.FC = () => {
 
   const getUsers = async () => {
     setIsLoading(true)
-    const { data, last_page }: Paginator<User> = await fetch.get(
+    const response = await fetch.get<Paginator<User> | fetch.ResponseBody>(
       urls.admin.users.list(),
       {
         q: query,
         page,
       },
     )
-    setUsers(() => data)
-    setTotalPages(last_page)
     setIsLoading(false)
+    if ('code' in response) {
+      toast.error(response.message)
+      return
+    }
+    setUsers(() => response.data)
+    setTotalPages(response.last_page)
   }
 
   useEffect(() => {
@@ -63,7 +67,8 @@ const UsersManagement: React.FC = () => {
 
   const handleSubmitQuery = (event: React.FormEvent) => {
     event.preventDefault()
-    getUsers()
+    if (page === 1) getUsers()
+    else setPage(1)
   }
 
   const handleEmailChange = async (user: User, index: number) => {

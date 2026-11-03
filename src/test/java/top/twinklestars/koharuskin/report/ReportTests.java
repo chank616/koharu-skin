@@ -79,7 +79,7 @@ class ReportTests {
                 .andExpect(jsonPath("$.total").value(1)).andExpect(jsonPath("$.data[0].texture.tid").value(1101))
                 .andExpect(jsonPath("$.data[0].informer.uid").value(1102)).andExpect(jsonPath("$.data[0].texture_uploader.uid").value(1103))
                 .andExpect(jsonPath("$.data[0].informer.password").doesNotExist());
-        mvc.perform(get("/admin/reports/list").with(user(admin)).param("q","' OR 1=1 --")).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/admin/reports/list").with(user(admin)).param("q","' OR 1=1 --")).andExpect(jsonPath("$.code").value(1));
     }
 
     @Test void deletingReportedTextureCleansReferencesKeepsSharedFileAndRewardsOnlyOnce() throws Exception {

@@ -20,8 +20,9 @@ public class AdminUsersController {
     @GetMapping({"/admin/users/list","/api/admin/users"})
     public Map<String,Object> list(@RequestParam(defaultValue="") String q, @RequestParam(defaultValue="1") int page) {
         int current=Math.max(1,page);
-        long total=users.count(q);
-        return Map.of("data",users.list(q,(current-1L)*10),"current_page",current,"last_page",Math.max(1,(total+9)/10),
+        var query=AdminSearch.parse(AdminSearch.ListType.USERS,q);
+        long total=users.count(query);
+        return Map.of("data",users.list(query,(current-1L)*10),"current_page",current,"last_page",Math.max(1,(total+9)/10),
                 "per_page",10,"total",total);
     }
     @PutMapping({"/admin/users/{uid}/email","/api/admin/users/{uid}/email"})

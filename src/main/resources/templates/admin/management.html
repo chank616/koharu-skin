@@ -14,7 +14,15 @@
             <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto" th:text="${translations.text('general.logout')}">退出登录</button></div>
     </nav>
     <div class="content-wrapper">
-        <section class="content-header"><h1 class="h3" th:text="${title}"></h1></section>
+        <section class="content-header"><h1 class="h3" th:text="${title}"></h1>
+            <details class="small text-muted mt-2" th:if="${blessing.route!='admin/extensions'}">
+                <summary th:text="${translations.text('koharu.search.title')}">搜索语法</summary>
+                <p class="mb-1" th:text="${translations.text('koharu.search.help')}"></p>
+                <code th:if="${blessing.route=='admin/users'}">verified score&gt;=100 sort:-score</code>
+                <code th:if="${blessing.route=='admin/players'}">uid:42 skin:0 sort:name</code>
+                <code th:if="${blessing.route=='admin/reports'}">status:0,1 report_at&gt;=2024-01-01 sort:-report_at</code>
+            </details>
+        </section>
         <section class="content"><div class="container-fluid"></div></section>
     </div>
 </div>

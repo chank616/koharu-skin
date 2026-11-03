@@ -73,7 +73,7 @@ public class ReportService {
     }
 
     public Map<String,Object> manage(String search,int page) {
-        var query=parse(search);
+        var query=top.twinklestars.koharuskin.admin.AdminSearch.parse(top.twinklestars.koharuskin.admin.AdminSearch.ListType.REPORTS,search);
         int current=Math.max(1,page); long total=reports.count(query);
         var data=reports.list(query,9,(current-1L)*9).stream().map(report->{
             var row=new LinkedHashMap<String,Object>();
@@ -84,19 +84,9 @@ public class ReportService {
         }).toList();
         return Map.of("data",data,"current_page",current,"last_page",Math.max(1,(total+8)/9),"total",total,"per_page",9);
     }
-    public record Query(Long id,Integer tid,Long uploader,Long reporter,Integer status,String reason,boolean oldest) {}
-    private Query parse(String text) {
-        var numbers=new HashMap<String,Long>(); var words=new ArrayList<String>(); boolean oldest=false;
-        for(String word:text.trim().split("\\s+")) {
-            if(word.matches("(id|tid|uploader|reporter|status):\\d{1,9}")) {
-                String[] pair=word.split(":",2); numbers.put(pair[0],Long.parseLong(pair[1]));
-            } else if(word.equals("sort:report_at")) oldest=true;
-            else if(!word.equals("sort:-report_at")&&!word.isEmpty()) words.add(word);
-        }
-        return new Query(numbers.get("id"),numbers.containsKey("tid")?numbers.get("tid").intValue():null,numbers.get("uploader"),numbers.get("reporter"),
-                numbers.containsKey("status")?numbers.get("status").intValue():null,String.join(" ",words),oldest);
-    }
     public List<ReportMapper.Report> mine(long uid,int page) { return reports.list(mineQuery(uid),10,(Math.max(1,page)-1L)*10); }
     public long minePages(long uid) { return Math.max(1,(reports.count(mineQuery(uid))+9)/10); }
-    private Query mineQuery(long uid) { return new Query(null,null,null,uid,null,"",false); }
+    private top.twinklestars.koharuskin.admin.AdminSearch mineQuery(long uid) {
+        return top.twinklestars.koharuskin.admin.AdminSearch.parse(top.twinklestars.koharuskin.admin.AdminSearch.ListType.REPORTS,"reporter:"+uid);
+    }
 }

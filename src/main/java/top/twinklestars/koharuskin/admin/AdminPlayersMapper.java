@@ -6,11 +6,10 @@ import java.util.List;
 
 @Mapper
 public interface AdminPlayersMapper {
-    String FILTER=" WHERE name LIKE CONCAT('%',#{query},'%') OR CAST(pid AS CHAR)=#{query} OR CAST(uid AS CHAR)=#{query}";
-    @Select("SELECT pid,uid,name,tid_skin,tid_cape,last_modified FROM players"+FILTER+" ORDER BY pid DESC LIMIT 10 OFFSET #{offset}")
-    List<Player> list(String query, long offset);
-    @Select("SELECT COUNT(*) FROM players"+FILTER)
-    long count(String query);
+    @Select("SELECT pid,uid,name,tid_skin,tid_cape,last_modified FROM players WHERE ${query.where} ORDER BY ${query.order} LIMIT 10 OFFSET #{offset}")
+    List<Player> list(@Param("query") AdminSearch query, long offset);
+    @Select("SELECT COUNT(*) FROM players WHERE ${query.where}")
+    long count(@Param("query") AdminSearch query);
     @Update("UPDATE players SET uid=#{uid},last_modified=CURRENT_TIMESTAMP WHERE pid=#{pid}")
     void owner(long pid, long uid);
 }
