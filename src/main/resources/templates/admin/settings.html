@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head(${title})}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
+        <a th:href="@{/admin/users}" class="nav-link">用户管理</a><a th:href="@{/admin/players}" class="nav-link">角色管理</a>
+        <a th:href="@{/admin/options}" class="nav-link">站点设置</a><a th:href="@{/admin/score}" class="nav-link">积分设置</a>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3" th:text="${title}"></h1>
+        <div class="alert alert-success" role="status" th:if="${param.saved != null}">设置已保存</div>
+        <div class="alert alert-danger" role="alert" th:if="${error != null}" th:text="${error}"></div>
+        <form class="card" method="post" th:action="@{'/admin/'+${section}}" th:each="group : ${groups}">
+            <input type="hidden" name="option" th:value="${group.key}">
+            <div class="card-header"><h2 class="card-title" th:text="${group.title}"></h2></div>
+            <div class="card-body">
+                <div class="form-group" th:each="field : ${group.fields}" th:switch="${field.type}">
+                    <label th:for="${field.key}" th:text="${field.label}"></label>
+                    <input th:case="'checkbox'" type="checkbox" class="ml-2" th:id="${field.key}" th:name="${field.key}" value="true" th:checked="${values[field.key] == 'true'}">
+                    <textarea th:case="'textarea'" class="form-control" rows="4" th:id="${field.key}" th:name="${field.key}" th:text="${values[field.key]}"></textarea>
+                    <select th:case="'rule'" class="form-control" th:id="${field.key}" th:name="${field.key}">
+                        <option value="official" th:selected="${values[field.key]=='official'}">英文、数字与下划线</option>
+                        <option value="cjk" th:selected="${values[field.key]=='cjk'}">允许中文</option>
+                        <option value="utf8" th:selected="${values[field.key]=='utf8'}">允许非空白 Unicode 字符</option>
+                        <option value="custom" th:selected="${values[field.key]=='custom'}">自定义正则</option>
+                    </select>
+                    <select th:case="'status'" class="form-control" th:id="${field.key}" th:name="${field.key}">
+                        <option value="403" th:selected="${values[field.key]=='403'}">403 禁止访问</option>
+                        <option value="404" th:selected="${values[field.key]=='404'}">404 未找到</option>
+                    </select>
+                    <input th:case="*" class="form-control" th:type="${field.type=='integer'?'number':field.type}" th:id="${field.key}" th:name="${field.key}" th:value="${values[field.key]}" th:min="${field.type=='number'?0:null}">
+                </div>
+            </div><div class="card-footer"><button class="btn btn-primary" type="submit">保存设置</button></div>
+        </form>
+    </div></section></div>
+</div>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body></html>

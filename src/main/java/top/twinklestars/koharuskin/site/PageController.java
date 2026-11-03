@@ -36,12 +36,13 @@ public class PageController {
     private final AccountMailService mail;
     private final ProfileMapper profiles;
     private final OfficialExtensions extensions;
+    private final top.twinklestars.koharuskin.admin.AdminSettings settings;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
                           TextureService textures, AccountMapper accounts, AccountMailService mail,
-                          ProfileMapper profiles, OfficialExtensions extensions) throws IOException {
+                          ProfileMapper profiles, OfficialExtensions extensions, top.twinklestars.koharuskin.admin.AdminSettings settings) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -51,6 +52,7 @@ public class PageController {
         this.mail = mail;
         this.profiles = profiles;
         this.extensions = extensions;
+        this.settings = settings;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -81,6 +83,31 @@ public class PageController {
         page(model,"admin/players",Map.of());
         model.addAttribute("title","角色管理");
         return "admin/management";
+    }
+
+    @GetMapping("/admin/{section:options|score}")
+    public String settings(Model model,@PathVariable String section) {
+        page(model,"admin/"+section,Map.of());
+        model.addAttribute("title",section.equals("options")?"站点设置":"积分设置");
+        model.addAttribute("section",section);
+        model.addAttribute("groups",settings.groups(section));
+        model.addAttribute("values",settings.values(section));
+        return "admin/settings";
+    }
+
+    @PostMapping("/admin/{section:options|score}")
+    public String saveSettings(Model model,@PathVariable String section,@RequestParam String option,@RequestParam Map<String,String> values) {
+        try { settings.save(section,option,values); }
+        catch(BusinessException error) {
+            model.addAttribute("error",error.getMessage());
+            String view=settings(model,section);
+            var entered=new java.util.LinkedHashMap<>(settings.values(section));
+            for(var group:settings.groups(section)) if(group.key().equals(option)) for(var field:group.fields())
+                entered.put(field.key(),values.getOrDefault(field.key(),field.type().equals("checkbox")?"false":""));
+            model.addAttribute("values",entered);
+            return view;
+        }
+        return "redirect:/admin/"+section+"?saved";
     }
 
     @GetMapping("/auth/register")
@@ -119,8 +146,10 @@ public class PageController {
     }
 
     private void page(Model model, String route, Map<String, Object> extra) {
-        model.addAttribute("siteName", "Koharu Skin");
-        model.addAttribute("blessing", Map.of("base_url", "", "route", route, "site_name", "Koharu Skin",
+        String siteName=options.text("site_name","Koharu Skin");
+        model.addAttribute("siteName", siteName);
+        model.addAttribute("siteDescription",options.text("site_description",""));
+        model.addAttribute("blessing", Map.of("base_url", "", "route", route, "site_name", siteName,
                 "locale", "zh_CN", "version", "0.0.1", "debug", false, "env", "production", "i18n", translations));
         model.addAttribute("extra", extra);
     }

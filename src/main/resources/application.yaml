@@ -3,6 +3,10 @@ spring:
     import: optional:file:./application-local.properties
   application:
     name: koharu-skin
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 101MB
   datasource:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/koharu_skin}
     username: ${DB_USERNAME:koharu_skin}
