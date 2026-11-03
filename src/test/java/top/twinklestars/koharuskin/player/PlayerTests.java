@@ -38,6 +38,7 @@ class PlayerTests {
         Player player = service.add(1, "Steve", false);
         assertThat(players.score(1)).isEqualTo(900);
         assertThat(service.uuid("Steve")).isEqualTo("5627dd98e6be3c21b8a8e92344183641");
+        assertThat(jdbc.queryForObject("SELECT pid FROM uuid WHERE name='Steve'",Long.class)).isEqualTo(player.pid());
         assertThatThrownBy(() -> service.add(2, "steve", false)).isInstanceOf(BusinessException.class);
         assertThat(players.score(2)).isEqualTo(1000);
         service.delete(1, player.pid());
@@ -57,6 +58,7 @@ class PlayerTests {
         service.rename(1, player.pid(), "newplayer");
         assertThat(service.uuid("newplayer")).isEqualTo(original);
         assertThat(players.uuid("OldPlayer")).isNull();
+        assertThat(jdbc.queryForObject("SELECT pid FROM uuid WHERE name='newplayer'",Long.class)).isEqualTo(player.pid());
     }
 
     @Test

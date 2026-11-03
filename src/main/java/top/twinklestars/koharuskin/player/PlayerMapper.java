@@ -35,7 +35,7 @@ public interface PlayerMapper {
     void deleteOtherPlayers(long uid, long pid);
     @Select("SELECT uuid FROM uuid WHERE name=#{name} LIMIT 1")
     String uuid(String name);
-    @Insert("INSERT INTO uuid(name,uuid) VALUES(#{name},#{uuid})")
+    @Insert("INSERT INTO uuid(name,uuid,pid) VALUES(#{name},#{uuid},(SELECT pid FROM players WHERE name=#{name} ORDER BY pid LIMIT 1))")
     void insertUuid(String name, String uuid);
     @Delete("DELETE FROM uuid WHERE name=#{name}")
     void deleteUuid(String name);
