@@ -112,6 +112,48 @@ class TextureTests {
 
     private int tid(Map<String,Object> result) { return ((Number)((Map<?,?>)result.get("data")).get("tid")).intValue(); }
 
+    @Test void customSkinLoaderProfilesExposeAppliedTexturesModelsAndCacheHeaders() throws Exception {
+        int skin=tid(service.upload(owner,"Private slim","alex",false,png(64,64)));
+        int cape=tid(service.upload(owner,"Private cape","cape",false,png(64,32)));
+        var player=players.add(1,"CslPlayer",false);
+        players.setTextures(1,player.pid(),skin,cape);
+        jdbc.update("UPDATE players SET last_modified='2025-01-02 03:04:05' WHERE pid=?",player.pid());
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('cache_expire_time','120')");
+        for(String path:new String[]{"/CslPlayer.json","/csl/CslPlayer.json"}) {
+            var result=mvc.perform(get(path)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.username").value("CslPlayer"))
+                    .andExpect(jsonPath("$.skins.slim").value(textures.find(skin).hash()))
+                    .andExpect(jsonPath("$.cape").value(textures.find(cape).hash()))
+                    .andExpect(jsonPath("$.uid").doesNotExist()).andExpect(jsonPath("$.email").doesNotExist())
+                    .andExpect(header().string("Cache-Control","max-age=120, public")).andExpect(header().exists("Last-Modified")).andReturn();
+            mvc.perform(get(path).header("If-Modified-Since",result.getResponse().getHeader("Last-Modified")))
+                    .andExpect(status().isNotModified()).andExpect(content().bytes(new byte[0]));
+            mvc.perform(head(path)).andExpect(status().isOk()).andExpect(content().bytes(new byte[0]));
+        }
+        mvc.perform(get("/csl/textures/"+textures.find(skin).hash())).andExpect(status().isOk())
+                .andExpect(content().bytes(Files.readAllBytes(storage.resolve(textures.find(skin).hash()))));
+        players.setTextures(1,player.pid(),0,0);
+        mvc.perform(get("/CslPlayer.json")).andExpect(jsonPath("$.skins.default").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.cape").value(org.hamcrest.Matchers.nullValue()));
+        service.type(owner,skin,"steve"); players.setTextures(1,player.pid(),skin,null);
+        mvc.perform(get("/CslPlayer.json")).andExpect(jsonPath("$.skins.default").value(textures.find(skin).hash()));
+        jdbc.update("UPDATE users SET permission=-1 WHERE uid=1");
+        mvc.perform(get("/CslPlayer.json").header("If-Modified-Since","Wed, 01 Jan 2031 00:00:00 GMT")).andExpect(status().isForbidden());
+        mvc.perform(get("/csl/Missing.json")).andExpect(status().isNotFound());
+    }
+
+    @Test void previewHashMatchesTexturePreviewAndMissingFileReturnsNotFound() throws Exception {
+        int tid=tid(service.upload(owner,"Preview","steve",false,png(64,64)));
+        var texture=textures.find(tid);
+        byte[] expected=mvc.perform(get("/preview/"+tid).param("height","128")).andReturn().getResponse().getContentAsByteArray();
+        mvc.perform(get("/preview/hash/"+texture.hash()).param("height","128")).andExpect(status().isOk()).andExpect(content().bytes(expected));
+        mvc.perform(get("/preview/hash/"+texture.hash()).param("height","99999")).andExpect(status().isBadRequest());
+        mvc.perform(get("/preview/hash/"+"0".repeat(64))).andExpect(status().isNotFound());
+        Files.delete(storage.resolve(texture.hash()));
+        mvc.perform(get("/preview/"+tid)).andExpect(status().isNotFound());
+        mvc.perform(get("/preview/hash/"+texture.hash())).andExpect(status().isNotFound());
+    }
+
     @Test void avatarAliasesRenderSelectedSkinAnonymouslyAndHandleMissingProfiles() throws Exception {
         int tid=tid(service.upload(owner,"Avatar skin","alex",false,png(64,64)));
         service.avatar(owner,tid);

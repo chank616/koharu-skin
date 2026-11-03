@@ -12,6 +12,13 @@ public interface TextureMapper {
     Integer idByHash(String hash);
     @Select("SELECT tid_skin FROM players WHERE name=#{name} LIMIT 1")
     Integer playerSkin(String name);
+    @Select("""
+            SELECT p.name,p.last_modified,u.permission,s.hash AS skin_hash,s.type AS skin_type,c.hash AS cape_hash
+            FROM players p JOIN users u ON u.uid=p.uid LEFT JOIN textures s ON s.tid=p.tid_skin
+            LEFT JOIN textures c ON c.tid=p.tid_cape WHERE p.name=#{name} LIMIT 1
+            """)
+    CslProfile cslProfile(String name);
+    record CslProfile(String name,java.time.LocalDateTime lastModified,int permission,String skinHash,String skinType,String capeHash) {}
     @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE hash=#{hash} AND (public=true OR uploader=#{uid}) ORDER BY tid LIMIT 1")
     Texture duplicate(String hash, long uid);
     @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE hash=#{hash} AND uploader=#{uid} AND type=#{type} ORDER BY tid LIMIT 1")

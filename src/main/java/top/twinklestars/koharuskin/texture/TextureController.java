@@ -46,12 +46,31 @@ public class TextureController {
         return texture;
     }
 
+    @GetMapping({"/{name}.json","/csl/{name}.json"})
+    public ResponseEntity<java.util.Map<String,Object>> csl(@PathVariable String name,org.springframework.web.context.request.WebRequest request,jakarta.servlet.http.HttpServletRequest httpRequest) {
+        var player=textures.cslProfile(name);
+        if(player==null) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"角色不存在");
+        if(player.permission()<0) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"此角色所属账号已被封禁");
+        var modified=player.lastModified().atZone(java.time.ZoneId.systemDefault()).toInstant();
+        boolean notModified=request.checkNotModified(modified.toEpochMilli());
+        var response=ResponseEntity.status(notModified?HttpStatus.NOT_MODIFIED:HttpStatus.OK)
+                .cacheControl(org.springframework.http.CacheControl.maxAge(java.time.Duration.ofSeconds(options.number("cache_expire_time",31536000))).cachePublic())
+                .lastModified(modified).contentType(MediaType.APPLICATION_JSON);
+        if(notModified||httpRequest.getMethod().equals("HEAD")) return response.build();
+        var profile=new java.util.LinkedHashMap<String,Object>();
+        profile.put("username",player.name());
+        profile.put("skins",java.util.Collections.singletonMap("alex".equals(player.skinType())?"slim":"default",player.skinHash()));
+        profile.put("cape",player.capeHash());
+        return response.body(profile);
+    }
+
     @GetMapping({"/textures/{hash}", "/csl/textures/{hash}"})
     public ResponseEntity<Resource> file(@PathVariable String hash) throws IOException {
         if (!hash.matches("[a-fA-F0-9]{64}")) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         Path file = directory.resolve(hash);
         if (!Files.isRegularFile(file)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).contentLength(Files.size(file))
+                .cacheControl(org.springframework.http.CacheControl.maxAge(java.time.Duration.ofSeconds(options.number("cache_expire_time",31536000))).cachePublic())
                 .lastModified(Files.getLastModifiedTime(file).toMillis()).eTag(hash).body(new FileSystemResource(file));
     }
 
@@ -64,8 +83,16 @@ public class TextureController {
     @GetMapping(value = "/preview/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
     public byte[] preview(@PathVariable int tid, @RequestParam(defaultValue = "200") @Min(16) @Max(1024) int height) throws IOException {
         Texture texture = find(tid);
+        if(!Files.isRegularFile(directory.resolve(texture.hash()))) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"材质文件不存在");
         var skin = ImageIO.read(directory.resolve(texture.hash()).toFile());
         return png(SkinImages.preview(skin, texture.type(), height));
+    }
+
+    @GetMapping(value="/preview/hash/{hash}",produces=MediaType.IMAGE_PNG_VALUE)
+    public byte[] previewHash(@PathVariable String hash,@RequestParam(defaultValue="200") @Min(16) @Max(1024) int height) throws IOException {
+        Integer tid=textures.idByHash(hash);
+        if(tid==null) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"材质不存在");
+        return preview(tid,height);
     }
 
     @GetMapping(value = "/avatar/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
