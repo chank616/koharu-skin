@@ -25,6 +25,7 @@ class AdminDashboardTests {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired AdminDashboard dashboard;
+    @Autowired org.springframework.context.ApplicationContext context;
     @MockitoBean Clock clock;
     final AccountUser admin=new AccountUser(1301,"stats@example.invalid","Stats","unused",2);
     final Instant now=Instant.parse("2026-03-01T17:00:00Z");
@@ -83,5 +84,12 @@ class AdminDashboardTests {
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("remember-key"))))
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("spring.datasource.password"))));
         assertThat(dashboard.status().get("数据库").keySet()).containsExactly("类型","版本","数据库","用户名");
+    }
+    @Test void ideRunWithoutMavenBuildMetadataCanStillShowRuntimeStatus() throws Exception {
+        var noMetadata=new org.springframework.beans.factory.support.DefaultListableBeanFactory()
+                .getBeanProvider(org.springframework.boot.info.BuildProperties.class);
+        var ide=new AdminDashboard(context.getBean(AdminDashboardMapper.class),clock,context.getBean(javax.sql.DataSource.class),
+                noMetadata,context.getEnvironment(),context.getBean(jakarta.servlet.ServletContext.class));
+        assertThat(ide.status().get("应用")).containsEntry("Koharu Skin","开发版本");
     }
 }

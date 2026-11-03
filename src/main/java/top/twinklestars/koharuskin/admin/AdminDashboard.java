@@ -1,6 +1,7 @@
 package top.twinklestars.koharuskin.admin;
 
 import jakarta.servlet.ServletContext;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.SpringBootVersion;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.core.env.Environment;
@@ -18,10 +19,10 @@ public class AdminDashboard {
     private final AdminDashboardMapper statistics;
     private final Clock clock;
     private final DataSource database;
-    private final BuildProperties build;
+    private final ObjectProvider<BuildProperties> build;
     private final Environment environment;
     private final ServletContext servlet;
-    public AdminDashboard(AdminDashboardMapper statistics,Clock clock,DataSource database,BuildProperties build,Environment environment,ServletContext servlet) {
+    public AdminDashboard(AdminDashboardMapper statistics,Clock clock,DataSource database,ObjectProvider<BuildProperties> build,Environment environment,ServletContext servlet) {
         this.statistics=statistics; this.clock=clock; this.database=database; this.build=build; this.environment=environment; this.servlet=servlet;
     }
     public AdminDashboardMapper.Totals totals() { return statistics.totals(); }
@@ -43,7 +44,8 @@ public class AdminDashboard {
     public Map<String,Map<String,String>> status() throws SQLException {
         var sections=new LinkedHashMap<String,Map<String,String>>();
         var application=new LinkedHashMap<String,String>();
-        application.put("Koharu Skin",build.getVersion());
+        // IDEA 直接运行时可能没有执行 Maven 的 build-info 目标。
+        application.put("Koharu Skin",Optional.ofNullable(build.getIfAvailable()).map(BuildProperties::getVersion).orElse("开发版本"));
         application.put("Spring Boot",SpringBootVersion.getVersion());
         String[] profiles=environment.getActiveProfiles();
         application.put("运行配置",String.join(", ",profiles.length==0?environment.getDefaultProfiles():profiles));
