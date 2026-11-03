@@ -57,15 +57,15 @@ public class SecurityConfiguration {
                                             HttpSessionCsrfTokenRepository csrf, JsonRememberMeServices remember,
                                             @Value("${koharu.remember-key}") String key, AccountMapper users) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/auth/**", "/app/**", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
+                .requestMatchers("/", "/auth/**", "/app/**", "/api", "/api/", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/**", "/avatar/**", "/*.json", "/csl/*.json", "/official/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.HEAD, "/*.json", "/csl/*.json").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/skinlib", "/skinlib/list", "/skinlib/show/*").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/admin/**","/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .addFilterBefore(new AccountSessionFilter(users, contexts, key), org.springframework.security.web.access.intercept.AuthorizationFilter.class)
-                .csrf(config -> config.csrfTokenRepository(csrf))
+                .csrf(config -> config.csrfTokenRepository(csrf).ignoringRequestMatchers("/api","/api/"))
                 .rememberMe(config -> config.key(key).rememberMeServices(remember))
                 .exceptionHandling(config -> config.authenticationEntryPoint((request, response, error) -> {
                     if (request.getHeader("Accept") != null && request.getHeader("Accept").contains("application/json")) {

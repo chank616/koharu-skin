@@ -15,6 +15,10 @@ public interface OAuthAuthorizationMapper {
     void save(Row row);
     @Select("SELECT * FROM koharu_oauth_authorizations WHERE id=#{id}")
     Row find(String id);
+    @Select("SELECT id FROM koharu_oauth_authorizations WHERE user_id=#{uid} AND access_hash IS NOT NULL")
+    java.util.List<String> forUser(long uid);
+    @Select("SELECT * FROM koharu_oauth_authorizations WHERE id=#{id} AND user_id=#{uid} FOR UPDATE")
+    Row lockOwned(String id,long uid);
     @Select("""
             <script>SELECT * FROM koharu_oauth_authorizations WHERE
             <choose>

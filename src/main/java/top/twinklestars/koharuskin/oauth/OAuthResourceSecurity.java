@@ -22,6 +22,7 @@ public class OAuthResourceSecurity {
     @Bean @Order(4)
     SecurityFilterChain oauthResources(HttpSecurity http,OAuthAuthorizations authorizations,AccountMapper users) throws Exception {
         http.securityMatcher(request->request.getRequestURI().startsWith(request.getContextPath()+"/api/")
+                        &&!Set.of(request.getContextPath()+"/api/",request.getContextPath()+"/api/site").contains(request.getRequestURI())
                         &&(request.getHeader("Authorization")!=null||org.springframework.web.cors.CorsUtils.isPreFlightRequest(request)))
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(cache->cache.disable()).csrf(csrf->csrf.disable())

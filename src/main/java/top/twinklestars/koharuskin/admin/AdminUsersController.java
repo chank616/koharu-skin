@@ -10,7 +10,6 @@ import top.twinklestars.koharuskin.account.AccountUser;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin/users")
 public class AdminUsersController {
     private final AdminUsersMapper users;
     private final AdminUsersService service;
@@ -18,38 +17,38 @@ public class AdminUsersController {
         this.users=users; this.service=service;
     }
 
-    @GetMapping("/list")
+    @GetMapping({"/admin/users/list","/api/admin/users"})
     public Map<String,Object> list(@RequestParam(defaultValue="") String q, @RequestParam(defaultValue="1") int page) {
         int current=Math.max(1,page);
         long total=users.count(q);
         return Map.of("data",users.list(q,(current-1L)*10),"current_page",current,"last_page",Math.max(1,(total+9)/10),
                 "per_page",10,"total",total);
     }
-    @PutMapping("/{uid}/email")
+    @PutMapping({"/admin/users/{uid}/email","/api/admin/users/{uid}/email"})
     public Map<String,Object> email(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid, @Valid @RequestBody Email form) {
         service.email(actor.uid(),uid,form.email()); return success("邮箱已更新");
     }
-    @PutMapping("/{uid}/verification")
+    @PutMapping({"/admin/users/{uid}/verification","/api/admin/users/{uid}/verification"})
     public Map<String,Object> verification(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid) {
         service.verification(actor.uid(),uid); return success("验证状态已更新");
     }
-    @PutMapping("/{uid}/nickname")
+    @PutMapping({"/admin/users/{uid}/nickname","/api/admin/users/{uid}/nickname"})
     public Map<String,Object> nickname(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid, @Valid @RequestBody Nickname form) {
         service.nickname(actor.uid(),uid,form.nickname()); return success("昵称已更新");
     }
-    @PutMapping("/{uid}/password")
+    @PutMapping({"/admin/users/{uid}/password","/api/admin/users/{uid}/password"})
     public Map<String,Object> password(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid, @Valid @RequestBody Password form) {
         service.password(actor.uid(),uid,form.password()); return success("密码已重置");
     }
-    @PutMapping("/{uid}/score")
+    @PutMapping({"/admin/users/{uid}/score","/api/admin/users/{uid}/score"})
     public Map<String,Object> score(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid, @Valid @RequestBody Score form) {
         service.score(actor.uid(),uid,form.score()); return success("积分已更新");
     }
-    @PutMapping("/{uid}/permission")
+    @PutMapping({"/admin/users/{uid}/permission","/api/admin/users/{uid}/permission"})
     public Map<String,Object> permission(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid, @Valid @RequestBody Permission form) {
         service.permission(actor.uid(),uid,form.permission()); return success("权限已更新");
     }
-    @DeleteMapping("/{uid}")
+    @DeleteMapping({"/admin/users/{uid}","/api/admin/users/{uid}"})
     public Map<String,Object> delete(@AuthenticationPrincipal AccountUser actor, @PathVariable long uid) {
         service.delete(actor.uid(),uid); return success("用户已删除");
     }

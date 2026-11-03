@@ -3,6 +3,10 @@ spring:
     import: optional:file:./application-local.properties
   application:
     name: koharu-skin
+  mvc:
+    formcontent:
+      filter:
+        enabled: false # PUT/DELETE 表单由 DTO 转换器读取，避免请求体被提前消耗。
   servlet:
     multipart:
       max-file-size: 100MB

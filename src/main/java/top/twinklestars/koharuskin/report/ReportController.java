@@ -15,9 +15,9 @@ public class ReportController {
     public Map<String,Object> submit(@AuthenticationPrincipal AccountUser user,@Valid @RequestBody Submission input) {
         reports.submit(user,input.tid(),input.reason()); return Map.of("code",0,"message","举报已提交，请等待管理员审核");
     }
-    @GetMapping("/admin/reports/list")
+    @GetMapping({"/admin/reports/list","/api/admin/reports"})
     public Map<String,Object> list(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="1") int page) { return reports.manage(q,page); }
-    @PutMapping("/admin/reports/{id}")
+    @PutMapping({"/admin/reports/{id}","/api/admin/reports/{id}"})
     public Map<String,Object> review(@AuthenticationPrincipal AccountUser admin,@PathVariable long id,@Valid @RequestBody Review input) {
         int status=reports.review(admin,id,input.action());
         return Map.of("code",0,"message","举报已处理","data",Map.of("status",status));

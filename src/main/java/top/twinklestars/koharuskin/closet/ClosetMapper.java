@@ -17,6 +17,8 @@ public interface ClosetMapper {
     int count(long uid, String category, String q);
     @Select("SELECT texture_tid FROM user_closet WHERE user_uid=#{uid}")
     List<Integer> ids(long uid);
+    @Select("SELECT t.tid,t.name,t.type,t.hash,t.size,t.uploader,t.public AS visible,t.upload_at,t.likes,c.item_name,c.user_uid FROM user_closet c JOIN textures t ON t.tid=c.texture_tid WHERE c.user_uid=#{uid} ORDER BY t.tid DESC")
+    List<ClosetItem> all(long uid);
     @Insert("INSERT INTO user_closet(user_uid,texture_tid,item_name) VALUES(#{uid},#{tid},#{name})")
     void add(long uid, int tid, String name);
     @Update("UPDATE user_closet SET item_name=#{name} WHERE user_uid=#{uid} AND texture_tid=#{tid}")

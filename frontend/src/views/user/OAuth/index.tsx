@@ -6,6 +6,7 @@ import { showModal, toast } from '@/scripts/notify'
 import Loading from '@/components/Loading'
 import Row from './Row'
 import ModalCreate from './ModalCreate'
+import AuthorizedApps from './AuthorizedApps'
 import type { App } from './types'
 
 type Exception = {
@@ -155,6 +156,7 @@ const OAuth: React.FC = () => {
         onCreate={handleAdd}
         onClose={handleCloseModalCreate}
       />
+      <AuthorizedApps />
     </>
   )
 }
