@@ -128,6 +128,31 @@ class TranslationTests {
         assertThat(links.get("en")).isEqualTo("/auth/login?return=%2Fuser%3Ftab%3Dskins&value=a%2Bb&lang=en");
         mvc.perform(get(java.net.URI.create(links.get("en").toString()))).andExpect(status().isOk()).andExpect(cookie().value("locale","en"));
     }
+
+    @Test void authenticatedAccountLanguageOverridesBrowserPreferenceWithoutChangingLegacyValue() throws Exception {
+        jdbc.update("UPDATE users SET locale='ru' WHERE uid=901");
+        var result=mvc.perform(get("/user").with(user(admin)).cookie(new Cookie("locale","en")).header("Accept-Language","zh-CN"))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(((Map<?,?>)result.getModelAndView().getModel().get("blessing")).get("locale")).isEqualTo("ru_RU");
+        assertThat(jdbc.queryForObject("SELECT locale FROM users WHERE uid=901",String.class)).isEqualTo("ru");
+    }
+
+    @Test void explicitLanguageSelectionPersistsOnlyForCurrentAccountAndSurvivesNewSession() throws Exception {
+        jdbc.update("UPDATE users SET locale='zh_CN' WHERE uid=901");
+        jdbc.update("UPDATE users SET locale='ru_RU' WHERE uid=902");
+        mvc.perform(get("/user").with(user(admin)).param("lang","en_US")).andExpect(status().isOk()).andExpect(cookie().value("locale","en"));
+        assertThat(jdbc.queryForObject("SELECT locale FROM users WHERE uid=901",String.class)).isEqualTo("en");
+        assertThat(jdbc.queryForObject("SELECT locale FROM users WHERE uid=902",String.class)).isEqualTo("ru_RU");
+        jdbc.update("UPDATE users SET password=? WHERE uid=901",new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("locale-test-password"));
+        var session=new org.springframework.mock.web.MockHttpSession();
+        mvc.perform(post("/auth/login").session(session).with(csrf()).contentType("application/json")
+                        .content("{\"identification\":\"translation901@example.invalid\",\"password\":\"locale-test-password\"}"))
+                .andExpect(jsonPath("$.code").value(0));
+        var result=mvc.perform(get("/user").session(session).cookie(new Cookie("locale","zh_CN"))).andExpect(status().isOk()).andReturn();
+        assertThat(((Map<?,?>)result.getModelAndView().getModel().get("blessing")).get("locale")).isEqualTo("en");
+        mvc.perform(get("/auth/login").param("lang","zh_TW")).andExpect(cookie().value("locale","zh_TW"));
+        assertThat(jdbc.queryForObject("SELECT locale FROM users WHERE uid=901",String.class)).isEqualTo("en");
+    }
     @SuppressWarnings("unchecked")
     private Map<String,Object> blessing(String locale) throws Exception {
         return (Map<String,Object>)mvc.perform(get("/auth/login").param("lang",locale)).andExpect(status().isOk()).andReturn().getModelAndView().getModel().get("blessing");

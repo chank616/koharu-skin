@@ -10,6 +10,8 @@ public interface ProfileMapper {
     Profile find(long uid);
     @Update("UPDATE users SET nickname=#{nickname} WHERE uid=#{uid}")
     void nickname(long uid, String nickname);
+    @Update("UPDATE users SET locale=#{locale} WHERE uid=#{uid}")
+    void locale(long uid,String locale);
     @Update("UPDATE users SET email=#{email},verified=false,verification_token='',remember_token=NULL WHERE uid=#{uid}")
     void email(long uid, String email);
     @Delete("DELETE FROM players WHERE uid=#{uid}")
