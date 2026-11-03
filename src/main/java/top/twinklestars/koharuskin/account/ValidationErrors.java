@@ -12,6 +12,11 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ValidationErrors {
+    @ExceptionHandler(BusinessException.class)
+    public Map<String, Object> business(BusinessException exception) {
+        return Map.of("code", 1, "message", exception.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     public Map<String, Object> validation(MethodArgumentNotValidException exception) {

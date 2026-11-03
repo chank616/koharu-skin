@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('注册')}"></head>
+<body class="hold-transition register-page">
+<div class="register-box">
+    <div class="register-logo"><a th:href="@{/}" th:text="${siteName}"></a></div>
+    <div class="card"><div class="card-body register-card-body"><main></main></div></div>
+</div>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body>
+</html>

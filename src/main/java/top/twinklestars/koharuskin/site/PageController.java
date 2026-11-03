@@ -17,12 +17,22 @@ import java.util.Map;
 public class PageController {
     private final LoginAttempts attempts;
     private final Map<String, Object> translations;
+    private final SiteOptions options;
 
-    public PageController(LoginAttempts attempts) throws IOException {
+    public PageController(LoginAttempts attempts, SiteOptions options) throws IOException {
         this.attempts = attempts;
+        this.options = options;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
+    }
+
+    @GetMapping("/auth/register")
+    public String register(Model model, @AuthenticationPrincipal AccountUser user) {
+        if (user != null) return "redirect:/user";
+        page(model, "auth/register", Map.of("player", options.enabled("register_with_player_name", true),
+                "recaptcha", "", "invisible", false));
+        return "auth/register";
     }
 
     @GetMapping("/")

@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,14 +25,17 @@ public class AuthController {
     private final SessionAuthenticationStrategy sessions;
     private final JsonRememberMeServices remember;
     private final LoginAttempts attempts;
+    private final RegistrationService registrations;
 
     public AuthController(AuthenticationManager authentication, SecurityContextRepository contexts,
-                          SessionAuthenticationStrategy sessions, JsonRememberMeServices remember, LoginAttempts attempts) {
+                          SessionAuthenticationStrategy sessions, JsonRememberMeServices remember, LoginAttempts attempts,
+                          RegistrationService registrations) {
         this.authentication = authentication;
         this.contexts = contexts;
         this.sessions = sessions;
         this.remember = remember;
         this.attempts = attempts;
+        this.registrations = registrations;
     }
 
     @PostMapping("/auth/login")
@@ -44,11 +48,7 @@ public class AuthController {
         try {
             var result = authentication.authenticate(
                     UsernamePasswordAuthenticationToken.unauthenticated(input.identification(), input.password()));
-            sessions.onAuthentication(result, request, response);
-            var context = SecurityContextHolder.createEmptyContext();
-            context.setAuthentication(result);
-            SecurityContextHolder.setContext(context);
-            contexts.saveContext(context, request, response);
+            establishSession(result, request, response);
             request.setAttribute("keep", input.keep());
             remember.loginSuccess(request, response, result);
             attempts.clear(address);
@@ -58,6 +58,28 @@ public class AuthController {
             return Map.of("code", 1, "message", "账号、密码错误或账号已被禁用", "data", Map.of("login_fails", failures));
         }
     }
+
+    @PostMapping("/auth/register")
+    public Map<String, Object> register(@Valid @RequestBody RegisterRequest input,
+                                        HttpServletRequest request, HttpServletResponse response) {
+        if (!CaptchaController.verify(request.getSession(), input.captcha())) throw new BusinessException("请输入正确的验证码");
+        var user = registrations.register(input.email(), input.password(), input.nickname(), input.player_name(), request.getRemoteAddr());
+        establishSession(UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()), request, response);
+        return Map.of("code", 0, "message", "注册成功");
+    }
+
+    private void establishSession(org.springframework.security.core.Authentication result,
+                                  HttpServletRequest request, HttpServletResponse response) {
+        sessions.onAuthentication(result, request, response);
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(result);
+        SecurityContextHolder.setContext(context);
+        contexts.saveContext(context, request, response);
+    }
+
+    public record RegisterRequest(@NotBlank @Email @Size(max = 100) String email,
+                                  @NotBlank @Size(min = 8, max = 32) String password,
+                                  String nickname, String player_name, String captcha) {}
 
     public record LoginRequest(@NotBlank @Size(max = 100) String identification,
                                @NotBlank @Size(min = 6, max = 32) String password, Boolean keep, String captcha) {}

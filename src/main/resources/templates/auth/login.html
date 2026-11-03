@@ -4,7 +4,7 @@
 <body class="hold-transition login-page">
 <div class="login-box">
     <div class="login-logo"><a th:href="@{/}" th:text="${siteName}">Koharu Skin</a></div>
-    <div class="card"><div class="card-body login-card-body"><main></main></div></div>
+    <div class="card"><div class="card-body login-card-body"><main></main><a th:href="@{/auth/register}">注册账号</a></div></div>
 </div>
 <th:block th:replace="~{fragments/assets :: scripts}"></th:block>
 </body>
