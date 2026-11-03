@@ -49,3 +49,12 @@ CREATE TABLE IF NOT EXISTS user_closet (
     texture_tid INT NOT NULL,
     item_name TEXT
 );
+CREATE TABLE IF NOT EXISTS reports (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tid INT NOT NULL,
+    uploader BIGINT NOT NULL,
+    reporter BIGINT NOT NULL,
+    reason TEXT NOT NULL,
+    status INT NOT NULL,
+    report_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

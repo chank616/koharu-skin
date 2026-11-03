@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('我的举报')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
+        <a th:href="@{/user}" class="nav-link">用户中心</a><a th:href="@{/skinlib}" class="nav-link">皮肤库</a>
+        <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3">我的举报</h1>
+        <div class="card"><div class="card-body table-responsive p-0"><table class="table table-striped">
+            <thead><tr><th>材质 ID</th><th>举报原因</th><th>状态</th><th>提交时间</th></tr></thead>
+            <tbody><tr th:each="report : ${reports}">
+                <td><a th:href="@{/skinlib/show/{tid}(tid=${report.tid})}" th:text="${report.tid}"></a></td>
+                <td th:text="${report.reason}"></td><td th:text="${report.status==0?'待审核':report.status==1?'已处理':'已驳回'}"></td>
+                <td th:text="${#temporals.format(report.reportAt,'yyyy-MM-dd HH:mm:ss')}"></td>
+            </tr><tr th:if="${#lists.isEmpty(reports)}"><td colspan="4" class="text-center">暂无举报</td></tr></tbody>
+        </table></div><div class="card-footer d-flex justify-content-end align-items-center">
+            <a class="btn btn-default" th:if="${currentPage>1}" th:href="@{/user/reports(page=${currentPage-1})}">上一页</a>
+            <span class="mx-3" th:text="${currentPage+' / '+totalPages}"></span>
+            <a class="btn btn-default" th:if="${currentPage<totalPages}" th:href="@{/user/reports(page=${currentPage+1})}">下一页</a>
+        </div></div>
+    </div></section></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body></html>

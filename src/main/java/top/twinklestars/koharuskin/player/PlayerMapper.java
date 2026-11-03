@@ -5,6 +5,8 @@ import java.util.List;
 
 @Mapper
 public interface PlayerMapper {
+    @Update("UPDATE users SET permission=-1,remember_token=NULL WHERE uid=#{uid}")
+    void ban(long uid);
     @Select("SELECT pid,uid,name,tid_skin,tid_cape,last_modified FROM players WHERE uid=#{uid} ORDER BY pid")
     List<Player> list(long uid);
     @Select("SELECT pid,uid,name,tid_skin,tid_cape,last_modified FROM players WHERE pid=#{pid}")

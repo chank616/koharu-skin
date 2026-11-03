@@ -37,12 +37,14 @@ public class PageController {
     private final ProfileMapper profiles;
     private final OfficialExtensions extensions;
     private final top.twinklestars.koharuskin.admin.AdminSettings settings;
+    private final top.twinklestars.koharuskin.report.ReportService reports;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
                           TextureService textures, AccountMapper accounts, AccountMailService mail,
-                          ProfileMapper profiles, OfficialExtensions extensions, top.twinklestars.koharuskin.admin.AdminSettings settings) throws IOException {
+                          ProfileMapper profiles, OfficialExtensions extensions, top.twinklestars.koharuskin.admin.AdminSettings settings,
+                          top.twinklestars.koharuskin.report.ReportService reports) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -53,6 +55,7 @@ public class PageController {
         this.profiles = profiles;
         this.extensions = extensions;
         this.settings = settings;
+        this.reports = reports;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -115,6 +118,18 @@ public class PageController {
     public String extensionList(Model model) {
         page(model,"admin/extensions",Map.of()); model.addAttribute("title","官方扩展");
         return "admin/management";
+    }
+    @GetMapping("/admin/reports")
+    public String adminReports(Model model) {
+        page(model,"admin/reports",Map.of()); model.addAttribute("title","举报审核");
+        return "admin/management";
+    }
+    @GetMapping("/user/reports")
+    public String myReports(Model model,@AuthenticationPrincipal AccountUser user,@RequestParam(defaultValue="1") int page) {
+        page(model,"user/reports",Map.of());
+        model.addAttribute("reports",reports.mine(user.uid(),page));
+        model.addAttribute("currentPage",Math.max(1,page)); model.addAttribute("totalPages",reports.minePages(user.uid()));
+        return "user/reports";
     }
     @GetMapping("/admin/extensions/config")
     public String extensionConfig(Model model) { return settings(model,"extensions"); }
