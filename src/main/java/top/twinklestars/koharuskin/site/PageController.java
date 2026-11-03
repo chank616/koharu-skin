@@ -68,6 +68,7 @@ public class PageController {
         page(model, "user/profile", Map.of());
         model.addAttribute("profile", profiles.find(user.uid()));
         model.addAttribute("singlePlayer", extensions.enabled("single-player-limit"));
+        model.addAttribute("emailLocked",extensions.enabled("auth-henan"));
         return "user/profile";
     }
 

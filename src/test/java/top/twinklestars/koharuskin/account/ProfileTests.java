@@ -98,6 +98,20 @@ class ProfileTests {
                 .andExpect(jsonPath("$.code").value(0));
         return session;
     }
+
+    @Test void henanAuthenticationLocksSelfServiceEmailUntilDisabled() throws Exception {
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('plugins_enabled','[{\"name\":\"auth-henan\",\"version\":\"0.5.1\"}]')");
+        var session=login();
+        mvc.perform(get("/user/profile").session(session)).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("id=\"change-email\""))));
+        change(session,"email","{\"email\":\"replacement@example.invalid\",\"password\":\"old-password\"}",1);
+        assertThat(accounts.findById(301).email()).isEqualTo("profile301@example.invalid");
+        assertThat(session.isInvalid()).isFalse();
+        jdbc.update("UPDATE options SET option_value='[]' WHERE option_name='plugins_enabled'");
+        mvc.perform(get("/user/profile").session(session)).andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"change-email\"")));
+        change(session,"email","{\"email\":\"replacement@example.invalid\",\"password\":\"old-password\"}",0);
+        assertThat(accounts.findById(301).email()).isEqualTo("replacement@example.invalid");
+    }
     private void change(MockHttpSession session,String action,String json,int code) throws Exception {
         mvc.perform(post("/user/profile").param("action",action).session(session).with(csrf()).contentType("application/json").content(json))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(code));

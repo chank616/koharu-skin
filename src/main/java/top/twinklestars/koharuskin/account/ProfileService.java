@@ -36,6 +36,7 @@ public class ProfileService {
     @Transactional
     public void email(long uid, String email, String password) {
         options.lockRegistration();
+        if(extensions.enabled("auth-henan")) throw new BusinessException("本站启用了河南统一认证，不能自行更改邮箱");
         checkPassword(accounts.lockById(uid), password);
         extensions.checkEmail(email);
         if (accounts.findByEmail(email) != null) throw new BusinessException("此邮箱已被使用");

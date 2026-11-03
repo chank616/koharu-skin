@@ -31,7 +31,7 @@
                     <label for="nickname">昵称</label><input id="nickname" name="nickname" class="form-control" required maxlength="50" th:value="${profile.nickname}" th:disabled="${singlePlayer}">
                 </div><div class="card-footer"><button type="submit" class="btn btn-primary" th:disabled="${singlePlayer}">更新昵称</button></div>
             </form>
-            <form id="change-email" class="card card-warning" method="post">
+            <form id="change-email" class="card card-warning" method="post" th:unless="${emailLocked}">
                 <div class="card-header"><h2 class="card-title">换绑邮箱</h2></div><div class="card-body">
                     <div class="form-group"><label for="new-email">新邮箱</label><input id="new-email" name="email" type="email" class="form-control" required maxlength="100" th:value="${profile.email}" autocomplete="email"></div>
                     <div class="form-group"><label for="email-password">当前密码</label><input id="email-password" name="password" type="password" class="form-control" required minlength="6" maxlength="32" autocomplete="current-password"></div>
