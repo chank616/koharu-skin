@@ -47,6 +47,7 @@ public class AdminSettings {
                             new Field("ygg_rate_limit","同一账号登录间隔（毫秒）","number","1000"),
                             new Field("ygg_skin_domain","额外材质域名（逗号分隔）","text",""),
                             new Field("ygg_search_profile_max","一次查询角色数量上限","number","5"),
+                            new Field("ygg_restore_api","启用 Restore API（为调用方提交的材质值签名，配合修改版 MultiLogin 使用）","checkbox","false"),
                             new Field("ygg_show_config_section","在用户中心显示外置登录地址","checkbox","true"))),
                     new Group("restricted-email-domains","邮箱域名限制",List.of(
                             new Field("restricted-email-domains.allow","允许的域名（每行一个，留空允许所有域名）","textarea","[]"),

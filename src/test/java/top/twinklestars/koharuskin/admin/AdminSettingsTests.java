@@ -111,6 +111,19 @@ class AdminSettingsTests {
         assertThat(settings.values("score").get("score_per_storage")).isEqualTo("1");
     }
 
+    @Test void restoreApiCanBeExplicitlyEnabledAndDisabledFromAdminForm() throws Exception {
+        var values=settings.values("extensions");
+        assertThat(values.get("ygg_restore_api")).isEqualTo("false");
+        var request=post("/admin/extensions/config").with(user(admin)).with(csrf()).param("option","yggdrasil-api");
+        values.put("ygg_restore_api","true"); values.forEach(request::param);
+        mvc.perform(request).andExpect(status().is3xxRedirection());
+        assertThat(options.enabled("ygg_restore_api",false)).isTrue();
+        values.remove("ygg_restore_api");
+        var disable=post("/admin/extensions/config").with(user(admin)).with(csrf()).param("option","yggdrasil-api");
+        values.forEach(disable::param); mvc.perform(disable).andExpect(status().is3xxRedirection());
+        assertThat(options.enabled("ygg_restore_api",true)).isFalse();
+    }
+
     private ResultActions save(String page,String group,Map<String,String> values) throws Exception {
         var request=post("/admin/"+page).with(user(admin)).with(csrf()).param("option",group);
         values.forEach(request::param);

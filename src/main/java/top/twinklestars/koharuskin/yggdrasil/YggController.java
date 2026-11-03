@@ -30,11 +30,13 @@ public class YggController {
     private final SiteOptions options;
     private final TextureService textures;
     private final ClosetService closet;
+    private final YggKeys keys;
 
     public YggController(YggAuth auth,YggProfiles profiles,YggMapper mapper,PlayerMapper players,PlayerService playerService,
-                         OfficialExtensions extensions,SiteOptions options,TextureService textures,ClosetService closet) {
+                         OfficialExtensions extensions,SiteOptions options,TextureService textures,ClosetService closet,YggKeys keys) {
         this.auth=auth; this.profiles=profiles; this.mapper=mapper; this.players=players; this.playerService=playerService;
         this.extensions=extensions; this.options=options; this.textures=textures; this.closet=closet;
+        this.keys=keys;
     }
 
     @ModelAttribute public void enabled() {
@@ -42,6 +44,19 @@ public class YggController {
     }
 
     @GetMapping({"","/"}) public Map<String,Object> metadata() { return profiles.metadata(); }
+
+    @GetMapping("/restore") public Map<String,String> restoreHello() { return Map.of("status","success"); }
+    @PostMapping(value="/restore",consumes=MediaType.APPLICATION_JSON_VALUE)
+    public tools.jackson.databind.node.ObjectNode restore(@RequestBody tools.jackson.databind.node.ObjectNode profile) {
+        if(!options.enabled("ygg_restore_api",false)) throw YggException.forbidden("Restore API is disabled.");
+        if(!profile.path("properties").isArray()) throw YggException.badRequest("Profile properties must be an array.");
+        for(var property:profile.get("properties"))
+            if(!property.isObject()||!property.path("value").isString()) throw YggException.badRequest("Property value must be a string.");
+        var key=keys.pair().getPrivate();
+        for(var property:profile.get("properties"))
+            ((tools.jackson.databind.node.ObjectNode)property).put("signature",keys.sign(property.get("value").asString(),key));
+        return profile;
+    }
 
     @PostMapping(value="/authserver/authenticate",consumes=MediaType.APPLICATION_JSON_VALUE)
     public Map<String,Object> authenticate(@Valid @RequestBody Login input) {
@@ -72,12 +87,12 @@ public class YggController {
         var player=mapper.profile(uuid);
         return player==null?ResponseEntity.noContent().build():ResponseEntity.ok(profiles.full(player,unsigned));
     }
-    @GetMapping("/api/users/profiles/minecraft/{name}")
+    @GetMapping({"/api/users/profiles/minecraft/{name}","/minecraftservices/minecraft/profile/lookup/name/{name}"})
     public ResponseEntity<?> search(@PathVariable String name) {
         var player=players.findByName(name);
         return player==null?ResponseEntity.noContent().build():ResponseEntity.ok(profiles.simple(player));
     }
-    @PostMapping(value="/api/profiles/minecraft",consumes=MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value={"/api/profiles/minecraft","/minecraftservices/minecraft/profile/lookup/bulk/byname"},consumes=MediaType.APPLICATION_JSON_VALUE)
     public List<Map<String,String>> search(@Valid @RequestBody List<@NotBlank String> names) {
         var unique=new LinkedHashSet<>(names);
         if (unique.size()>options.number("ygg_search_profile_max",5)) throw YggException.badRequest("Too many profile names.");

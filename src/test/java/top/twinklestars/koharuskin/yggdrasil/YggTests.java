@@ -225,6 +225,52 @@ class YggTests {
         postJson("/authserver/signout",Map.of("username","one@example.invalid","password","test-password")).andExpect(status().isForbidden());
     }
 
+    @Test void restoreSignsEveryOriginalValueWithoutChangingProfileOrRotatingKeys() throws Exception {
+        options.insert("ygg_restore_api","true");
+        String first=Base64.getEncoder().encodeToString("{\"textures\":{},\"profileName\":\"测试\"}".getBytes(StandardCharsets.UTF_8));
+        var input=Map.of("id",OTHER,"name","RemotePlayer","extra",Map.of("keep",true),"properties",List.of(
+                Map.of("name","textures","value",first,"signature","old-signature"),Map.of("name","custom","value","另一个值")));
+        var restored=body(postJson("/restore",input).andExpect(status().isOk()));
+        assertThat(restored.get("id").asString()).isEqualTo(OTHER); assertThat(restored.get("name").asString()).isEqualTo("RemotePlayer");
+        assertThat(restored.at("/extra/keep").asBoolean()).isTrue();
+        assertThat(restored.at("/properties/0/value").asString()).isEqualTo(first);
+        for(var property:restored.get("properties")) {
+            var verifier=Signature.getInstance("SHA1withRSA"); verifier.initVerify(keyPair.getPublic());
+            verifier.update(property.get("value").asString().getBytes(StandardCharsets.UTF_8));
+            assertThat(verifier.verify(Base64.getDecoder().decode(property.get("signature").asString()))).isTrue();
+        }
+        assertThat(options.get("ygg_private_key")).isEqualTo(YggKeys.pem("PRIVATE KEY",keyPair.getPrivate().getEncoded()));
+        assertThat(players.find(201).name()).isEqualTo("OtherPlayer");
+    }
+
+    @Test void restoreRequiresExplicitOptInAndRejectsMalformedProperties() throws Exception {
+        mvc.perform(get(ROOT+"/restore")).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("success"));
+        postJson("/restore",Map.of("properties",List.of())).andExpect(status().isForbidden());
+        options.insert("ygg_restore_api","true");
+        for(Object input:List.of(Map.of(),Map.of("properties","invalid"),Map.of("properties",List.of(Map.of("value",7))),Map.of("properties",List.of("invalid"))))
+            postJson("/restore",input).andExpect(status().isBadRequest());
+        postJson("/restore",Map.of("properties",List.of())).andExpect(status().isOk()).andExpect(jsonPath("$.properties").isEmpty());
+        options.update("plugins_enabled","[]");
+        mvc.perform(get(ROOT+"/restore")).andExpect(status().isNotFound());
+        postJson("/restore",Map.of("properties",List.of())).andExpect(status().isNotFound());
+    }
+
+    @Test void minecraftServicesLookupAliasesKeepLegacyProfilesAndQueryLimits() throws Exception {
+        String single="/minecraftservices/minecraft/profile/lookup/name/",batch="/minecraftservices/minecraft/profile/lookup/bulk/byname";
+        var old=body(mvc.perform(get(ROOT+"/api/users/profiles/minecraft/PlayerOne")).andExpect(status().isOk()));
+        var modern=body(mvc.perform(get(ROOT+single+"PlayerOne")).andExpect(status().isOk()));
+        assertThat(modern).isEqualTo(old);
+        mvc.perform(get(ROOT+single+"MissingPlayer")).andExpect(status().isNoContent());
+        var names=List.of("PlayerOne","PlayerOne","PlayerTwo","MissingPlayer");
+        assertThat(body(postJson(batch,names).andExpect(status().isOk())))
+                .isEqualTo(body(postJson("/api/profiles/minecraft",names).andExpect(status().isOk())));
+        options.insert("ygg_search_profile_max","1");
+        postJson(batch,List.of("PlayerOne","PlayerTwo")).andExpect(status().isBadRequest());
+        options.update("plugins_enabled","[]");
+        mvc.perform(get(ROOT+single+"PlayerOne")).andExpect(status().isNotFound());
+        postJson(batch,List.of("PlayerOne")).andExpect(status().isNotFound());
+    }
+
     @Test void disabledExtensionAndInvalidInputCannotBypassProtocolAuthentication() throws Exception {
         mvc.perform(post(ROOT+"/authserver/authenticate").contentType("application/json").content("{}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("IllegalArgumentException"));
