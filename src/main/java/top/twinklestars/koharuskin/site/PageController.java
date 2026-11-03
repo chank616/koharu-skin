@@ -39,6 +39,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.admin.AdminSettings settings;
     private final top.twinklestars.koharuskin.report.ReportService reports;
     private final top.twinklestars.koharuskin.notification.NotificationService notifications;
+    private final top.twinklestars.koharuskin.admin.AdminDashboard dashboard;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -46,7 +47,8 @@ public class PageController {
                           TextureService textures, AccountMapper accounts, AccountMailService mail,
                           ProfileMapper profiles, OfficialExtensions extensions, top.twinklestars.koharuskin.admin.AdminSettings settings,
                           top.twinklestars.koharuskin.report.ReportService reports,
-                          top.twinklestars.koharuskin.notification.NotificationService notifications) throws IOException {
+                          top.twinklestars.koharuskin.notification.NotificationService notifications,
+                          top.twinklestars.koharuskin.admin.AdminDashboard dashboard) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -59,6 +61,7 @@ public class PageController {
         this.settings = settings;
         this.reports = reports;
         this.notifications = notifications;
+        this.dashboard = dashboard;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -89,9 +92,18 @@ public class PageController {
     @GetMapping("/admin")
     public String admin(Model model) {
         page(model,"admin",Map.of());
+        model.addAttribute("sum",dashboard.totals());
         if(!model.containsAttribute("notificationForm")) model.addAttribute("notificationForm",
                 new top.twinklestars.koharuskin.notification.NotificationController.Send("all",null,"","",""));
         return "admin/index";
+    }
+
+    @GetMapping("/admin/status")
+    public String adminStatus(Model model) throws java.sql.SQLException {
+        page(model,"admin/status",Map.of());
+        model.addAttribute("detail",dashboard.status());
+        model.addAttribute("enabledExtensions",extensions.list().stream().filter(OfficialExtensions.Extension::enabled).toList());
+        return "admin/status";
     }
 
     @GetMapping("/admin/players")

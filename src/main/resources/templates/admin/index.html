@@ -8,11 +8,19 @@
         <a th:href="@{/admin/users}" class="nav-link">用户管理</a><a th:href="@{/admin/players}" class="nav-link">角色管理</a>
         <a th:href="@{/admin/reports}" class="nav-link">举报审核</a><a th:href="@{/admin/options}" class="nav-link">站点设置</a>
         <a th:href="@{/admin/score}" class="nav-link">积分设置</a><a th:href="@{/admin/extensions}" class="nav-link">官方扩展</a>
+        <a th:href="@{/admin/status}" class="nav-link">运行状态</a>
         <th:block th:replace="~{fragments/notifications :: bell}"></th:block>
         <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <h1 class="h3 mb-3">管理后台</h1>
+        <div class="row">
+            <div class="col-md-3"><div class="small-box bg-info"><div class="inner"><h3 th:text="${sum.users}"></h3><p>用户总数</p></div><a th:href="@{/admin/users}" class="small-box-footer">用户管理 <i class="fas fa-arrow-circle-right"></i></a></div></div>
+            <div class="col-md-3"><div class="small-box bg-green"><div class="inner"><h3 th:text="${sum.players}"></h3><p>角色总数</p></div><a th:href="@{/admin/players}" class="small-box-footer">角色管理 <i class="fas fa-arrow-circle-right"></i></a></div></div>
+            <div class="col-md-3"><div class="small-box bg-purple"><div class="inner"><h3 th:text="${sum.textures}"></h3><p>材质总数</p></div></div></div>
+            <div class="col-md-3"><div class="small-box bg-yellow"><div class="inner"><h3 th:text="${sum.storage>1024?#numbers.formatDecimal(sum.storage/1024.0,1,1)+' MB':sum.storage+' KB'}"></h3><p>材质容量</p></div></div></div>
+        </div>
+        <div class="row"><div class="col-lg-6">
         <div class="alert alert-success" role="status" th:if="${notificationSent}">通知发送成功</div>
         <div class="alert alert-danger" role="alert" th:if="${notificationError != null}" th:text="${notificationError}"></div>
         <form class="card" method="post" th:action="@{/admin/notifications/send}" th:object="${notificationForm}">
@@ -30,6 +38,10 @@
                 <div class="form-group"><label for="content">正文（支持 Markdown）</label><textarea id="content" th:field="*{content}" class="form-control" rows="6"></textarea></div>
             </div><div class="card-footer"><button type="submit" class="btn btn-primary">发送通知</button></div>
         </form>
+        </div><div class="col-lg-6"><div class="card card-primary">
+            <div class="card-header"><h2 class="card-title">近 31 天概况</h2></div>
+            <div class="card-body"><div id="chart-users-registration" style="height:300px" aria-label="用户注册趋势"></div><div id="chart-textures-upload" style="height:300px" aria-label="材质上传趋势"></div></div>
+        </div></div></div>
     </div></section></div>
 </div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>
 </body></html>
