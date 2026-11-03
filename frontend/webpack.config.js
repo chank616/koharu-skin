@@ -16,7 +16,9 @@ module.exports = {
     ],
   },
   output: {
-    path: path.resolve(__dirname, '../src/main/resources/static/app'),
+    path: process.env.FRONTEND_OUTPUT_DIR
+      ? path.resolve(process.env.FRONTEND_OUTPUT_DIR)
+      : path.resolve(__dirname, '../src/main/resources/static/app'),
     publicPath: '/app/',
     crossOriginLoading: 'anonymous',
     filename: '[name].js',
