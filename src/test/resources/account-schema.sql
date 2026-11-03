@@ -68,3 +68,46 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL
 );
+CREATE TABLE IF NOT EXISTS oauth_clients (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    name VARCHAR(255) NOT NULL,
+    secret VARCHAR(100),
+    provider VARCHAR(255),
+    redirect TEXT NOT NULL,
+    personal_access_client BOOLEAN NOT NULL,
+    password_client BOOLEAN NOT NULL,
+    revoked BOOLEAN NOT NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS oauth_access_tokens (
+    id VARCHAR(100) PRIMARY KEY,
+    user_id BIGINT,
+    client_id BIGINT NOT NULL,
+    name VARCHAR(255),
+    scopes TEXT,
+    revoked BOOLEAN NOT NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    expires_at TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS oauth_auth_codes (
+    id VARCHAR(100) PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    client_id BIGINT NOT NULL,
+    scopes TEXT,
+    revoked BOOLEAN NOT NULL,
+    expires_at TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
+    id VARCHAR(100) PRIMARY KEY,
+    access_token_id VARCHAR(100) NOT NULL,
+    revoked BOOLEAN NOT NULL,
+    expires_at TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS scopes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NOT NULL
+);

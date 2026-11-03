@@ -81,6 +81,13 @@ public class PageController {
         model.addAttribute("henanEnabled",extensions.enabled("auth-henan"));
     }
 
+    @GetMapping("/user/oauth/manage")
+    public String oauth(Model model,@AuthenticationPrincipal AccountUser user) {
+        playerService.requireVerified(user.uid());
+        page(model,"user/oauth/manage",Map.of());
+        return "user/oauth";
+    }
+
     @GetMapping("/user/profile")
     public String profile(Model model, @AuthenticationPrincipal AccountUser user) {
         page(model, "user/profile", Map.of());
