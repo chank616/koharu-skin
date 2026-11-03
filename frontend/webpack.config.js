@@ -18,6 +18,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, '../src/main/resources/static/app'),
     publicPath: '/app/',
+    crossOriginLoading: 'anonymous',
     filename: '[name].js',
     chunkFilename: '[id].[contenthash:7].js',
     clean: true,

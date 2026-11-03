@@ -69,6 +69,68 @@ class SitePresentationTests {
         assertThat(updated).contains("<h1>新公告</h1>").doesNotContain("{version}","旧公告");
         assertThat(settings.values("options").get("announcement")).isEqualTo("# 新公告\n\n版本 {version}");
     }
+    @Test void customCodeIsSavedOnlyByAdminAndServedAsSeparateUncachedResources() throws Exception {
+        String css=".navbar::after { content: '<中文>'; }";
+        String js="window.customMessage = '</script><div>中文</div>';";
+        mvc.perform(post("/admin/customize").with(user(member)).with(csrf()).param("option","customJsCss").param("custom_css",css).param("custom_js",js))
+                .andExpect(status().isForbidden());
+        assertThat(options.get("custom_js")).isNull();
+        mvc.perform(post("/admin/customize").with(user(admin)).with(csrf()).param("option","customJsCss").param("custom_css",css).param("custom_js",js)
+                .param("remember-key","not-an-option"))
+                .andExpect(redirectedUrl("/admin/customize?saved"));
+        assertThat(options.get("remember-key")).isNull();
+        mvc.perform(get("/official/site/custom.css")).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("text/css"))
+                .andExpect(header().string("Cache-Control","no-store")).andExpect(content().string(css));
+        mvc.perform(get("/official/site/custom.js")).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("text/javascript"))
+                .andExpect(header().string("Cache-Control","no-store")).andExpect(content().string(js));
+        mvc.perform(head("/official/site/custom.js")).andExpect(status().isOk())
+                .andExpect(header().longValue("Content-Length",js.getBytes(java.nio.charset.StandardCharsets.UTF_8).length));
+        var page=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        assertThat(page).contains("/official/site/custom.css","/official/site/custom.js").doesNotContain(js,css);
+        settings.save("customize","customJsCss",Map.of("custom_js","","custom_css",""));
+        var cleared=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        assertThat(cleared).doesNotContain("/official/site/custom.css","/official/site/custom.js");
+        mvc.perform(get("/official/site/custom.js")).andExpect(content().string(""));
+    }
+
+    @Test void metadataPreservesMetaTagsAndEscapesPlainFieldsWithoutInjectingOtherMarkup() throws Exception {
+        mvc.perform(post("/admin/options").with(user(admin)).with(csrf()).param("option","meta")
+                        .param("meta_keywords","皮肤,披风\"<img>").param("meta_description","中文介绍 & 分享")
+                        .param("meta_extras","<meta property='og:title' content='站点 > 标题'><div id='discard-me'>not metadata</div><script>window.injected=1</script><meta name=robots content=noindex>"))
+                .andExpect(redirectedUrl("/admin/options?saved"));
+        var page=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        var document=org.jsoup.Jsoup.parse(page);
+        assertThat(document.selectFirst("meta[name=keywords]").attr("content")).isEqualTo("皮肤,披风\"<img>");
+        assertThat(document.selectFirst("meta[name=description]").attr("content")).isEqualTo("中文介绍 & 分享");
+        assertThat(document.selectFirst("meta[property=og:title]").attr("content")).isEqualTo("站点 > 标题");
+        assertThat(document.selectFirst("meta[name=robots]").attr("content")).isEqualTo("noindex");
+        assertThat(page).doesNotContain("discard-me","window.injected=1","not metadata");
+    }
+
+    @Test void navigationThemeAndCdnApplyToPagesAndClearingCdnRestoresLocalAssets() throws Exception {
+        mvc.perform(post("/admin/customize").with(user(admin)).with(csrf()).param("option","color").param("navbar_color","warning"))
+                .andExpect(redirectedUrl("/admin/customize?saved"));
+        for(String path:List.of("/","/user","/admin","/skinlib")) {
+            var page=mvc.perform(get(path).with(user(admin))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertThat(page).contains("navbar-warning navbar-light","name=\"theme-color\" content=\"#ffc107\"");
+        }
+        assertThatThrownBy(()->settings.save("customize","color",Map.of("navbar_color","unknown"))).isInstanceOf(top.twinklestars.koharuskin.account.BusinessException.class);
+        assertThat(options.get("navbar_color")).isEqualTo("warning");
+        mvc.perform(post("/admin/resource").with(user(member)).with(csrf()).param("option","resources").param("cdn_address","https://cdn.example.invalid"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/admin/resource").with(user(admin)).with(csrf()).param("option","resources").param("cdn_address"," https://cdn.example.invalid/assets/// "))
+                .andExpect(redirectedUrl("/admin/resource?saved"));
+        assertThat(options.get("cdn_address")).isEqualTo("https://cdn.example.invalid/assets");
+        var cdnPage=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        for(String file:List.of("app.js","style.css","home.js","home.css")) assertThat(cdnPage).contains("https://cdn.example.invalid/assets/app/"+file);
+        assertThat(cdnPage).contains("id=\"cdn-host\"");
+        for(String invalid:List.of("//cdn.example.invalid","javascript:alert(1)","https://user:secret@cdn.example.invalid","https://cdn.example.invalid?a=1"))
+            assertThatThrownBy(()->settings.save("resource","resources",Map.of("cdn_address",invalid))).isInstanceOf(top.twinklestars.koharuskin.account.BusinessException.class);
+        settings.save("resource","resources",Map.of("cdn_address",""));
+        var localPage=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        assertThat(localPage).contains("src=\"/app/app.js\"","href=\"/app/style.css\"").doesNotContain("id=\"cdn-host\"","cdn.example.invalid");
+    }
+
     @Test void hitokotoIsOnlyLoadedOnEnabledUserAndAdminPages() throws Exception {
         extensions.setEnabled("hitokoto",true);
         for(String path:List.of("/user","/admin")) {

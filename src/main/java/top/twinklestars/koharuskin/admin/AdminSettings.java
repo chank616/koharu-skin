@@ -25,7 +25,13 @@ public class AdminSettings {
                     new Field("hide_intro","隐藏首页功能介绍","checkbox","false"),
                     new Field("fixed_bg","固定首页背景","checkbox","false"),
                     new Field("copyright_prefer","驱动说明样式（0～6）","number","0"),
-                    new Field("copyright_text","页脚内容（支持 HTML，以及 {year}、{site_name}、{site_url}）","textarea","Copyright &copy; {year} {site_name}."))));
+                    new Field("copyright_text","页脚内容（支持 HTML，以及 {year}、{site_name}、{site_url}）","textarea","Copyright &copy; {year} {site_name}."))),
+                    new Group("color","导航栏颜色",List.of(new Field("navbar_color","导航栏颜色","color","cyan"))),
+                    new Group("customJsCss","自定义样式与脚本",List.of(
+                            new Field("custom_css","CSS（直接填写代码，不含 style 标签）","textarea",""),
+                            new Field("custom_js","JavaScript（直接填写代码，不含 script 标签）","textarea",""))));
+            case "resource" -> List.of(new Group("resources","静态资源 CDN",List.of(
+                    new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))));
             case "extensions" -> List.of(
                     new Group("skin-api-extension","皮肤 API 扩展",List.of(
                             new Field("skin_api_tokens","API 令牌（至少 16 字符，多个用逗号分隔；留空保留现有令牌）","password",""))),
@@ -57,7 +63,9 @@ public class AdminSettings {
                     new Field("status_code_for_private","私密材质访问状态码","status","403"),
                     new Field("texture_name_regexp","材质名称正则","text",""),
                     new Field("content_policy","上传内容规范","textarea",""))),
-                    new Group("announ","用户中心公告",List.of(new Field("announcement","公告（支持 Markdown、HTML 和 {version}）","textarea","欢迎使用 Koharu Skin {version}！"))));
+                    new Group("announ","用户中心公告",List.of(new Field("announcement","公告（支持 Markdown、HTML 和 {version}）","textarea","欢迎使用 Koharu Skin {version}！"))),
+                    new Group("meta","页面元信息",List.of(new Field("meta_keywords","关键词","text",""),
+                            new Field("meta_description","搜索结果中的站点描述","text",""),new Field("meta_extras","额外 meta 标签","textarea",""))));
             case "score" -> List.of(
                     new Group("rate","积分消耗",List.of(
                             new Field("score_per_storage","公开材质每 KB 消耗","number","1"),
@@ -153,6 +161,18 @@ public class AdminSettings {
         }
         if(groupKey.equals("homepage")&&Integer.parseInt(values.get("copyright_prefer"))>6)
             throw new BusinessException("驱动说明样式应为 0～6");
+        if(groupKey.equals("color")&&!top.twinklestars.koharuskin.site.SitePresentation.COLORS.containsKey(values.get("navbar_color")))
+            throw new BusinessException("导航栏颜色无效");
+        if(groupKey.equals("resources")) {
+            String cdn=values.get("cdn_address").trim().replaceAll("/+$","");
+            if(!cdn.isEmpty()) {
+                java.net.URI uri;
+                try { uri=java.net.URI.create(cdn); } catch(IllegalArgumentException error) { throw new BusinessException("CDN 地址格式无效"); }
+                if((!"http".equals(uri.getScheme())&&!"https".equals(uri.getScheme()))||uri.getHost()==null||uri.getUserInfo()!=null||uri.getQuery()!=null||uri.getFragment()!=null)
+                    throw new BusinessException("CDN 地址应为完整 HTTP(S) 地址，不能带账号、查询参数或片段");
+            }
+            values.put("cdn_address",cdn);
+        }
         options.lockRegistration();
         values.forEach((key,value)-> { if(options.get(key)==null) options.insert(key,value); else options.update(key,value); });
         values.forEach((key,value)-> { if(localizedField(key)) { String localized=key+"_zh_CN";

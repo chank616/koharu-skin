@@ -3,12 +3,17 @@
 <head th:fragment="head(title)">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" th:content="${siteDescription}">
+    <meta name="description" th:content="${siteAssets.description}">
+    <meta name="keywords" th:content="${siteAssets.keywords}">
+    <meta name="theme-color" th:content="${siteAssets.themeColor}">
+    <th:block th:utext="${siteAssets.meta}"></th:block>
     <meta name="csrf-token" th:content="${_csrf.token}">
     <title th:text="${blessing.route=='/'?siteName:title + ' - ' + siteName}">Koharu Skin</title>
-    <link rel="stylesheet" th:href="@{/app/style.css}">
+    <link th:if="${siteAssets.cdn!=''}" rel="preconnect" id="cdn-host" th:href="${siteAssets.cdn}" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="${siteAssets.cdn+'/app/style.css'}" crossorigin="anonymous">
     <link rel="icon" th:if="${favicon != ''}" th:href="${favicon}">
-    <link rel="stylesheet" th:if="${blessing.route=='/'}" th:href="@{/app/home.css}">
+    <link rel="stylesheet" th:if="${blessing.route=='/'}" th:href="${siteAssets.cdn+'/app/home.css'}" crossorigin="anonymous">
+    <link rel="stylesheet" th:if="${siteAssets.css}" th:href="@{/official/site/custom.css}">
     <script th:inline="javascript">window.blessing = /*[[${blessing}]]*/ {};</script>
 </head>
 <body>
@@ -21,14 +26,15 @@
         data.textContent = JSON.stringify(extra);
         document.body.appendChild(data);
     </script>
-    <script th:src="@{/app/app.js}"></script>
-    <script th:if="${blessing.route=='/'}" th:src="@{/app/home.js}"></script>
+    <script th:src="${siteAssets.cdn+'/app/app.js'}" crossorigin="anonymous"></script>
+    <script th:if="${blessing.route=='/'}" th:src="${siteAssets.cdn+'/app/home.js'}" crossorigin="anonymous"></script>
     <script th:if="${hitokotoEnabled and (#strings.startsWith(blessing.route,'user') or #strings.startsWith(blessing.route,'admin'))}" th:src="@{/official/hitokoto.js}"></script>
     <th:block th:if="${xiqueerEnabled and #strings.startsWith(blessing.route,'user')}">
         <script th:src="@{/official/xiqueer/qrcode.min.js}"></script>
         <script th:src="@{/official/xiqueer/modal.js}"></script>
         <script th:if="${blessing.route=='user/xiqueer-verification'}" th:src="@{/official/xiqueer/verify.js}"></script>
     </th:block>
+    <script th:if="${siteAssets.js}" th:src="@{/official/site/custom.js}"></script>
 </th:block>
 </body>
 </html>

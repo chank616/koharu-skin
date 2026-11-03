@@ -5,7 +5,7 @@ if (process.env.NODE_ENV === 'development') {
   __webpack_public_path__ = __blessing_public_path__
 } else {
   const link = document.querySelector<HTMLLinkElement>('link#cdn-host')
-  const base = link?.href ?? blessing.base_url
+  const base = (link?.href ?? blessing.base_url).replace(/\/+$/, '')
   __webpack_public_path__ = `${base}/app/`
 }
 

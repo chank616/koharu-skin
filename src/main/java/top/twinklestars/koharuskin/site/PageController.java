@@ -86,6 +86,7 @@ public class PageController {
         model.addAttribute("henanEnabled",extensions.enabled("auth-henan"));
         model.addAttribute("hitokotoEnabled",extensions.enabled("hitokoto"));
         model.addAttribute("favicon",presentation.favicon());
+        model.addAttribute("siteAssets",presentation.assets());
     }
 
     @GetMapping("/user/oauth/manage")
@@ -155,17 +156,18 @@ public class PageController {
         return "admin/management";
     }
 
-    @GetMapping("/admin/{section:options|score|customize}")
+    @GetMapping("/admin/{section:options|score|customize|resource}")
     public String settings(Model model,@PathVariable String section) {
         page(model,"admin/"+(section.equals("extensions")?"extensions/config":section),Map.of());
-        model.addAttribute("title",switch(section){case "options"->"站点设置";case "score"->"积分设置";case "customize"->"外观设置";default->"官方扩展配置";});
+        model.addAttribute("title",switch(section){case "options"->"站点设置";case "score"->"积分设置";case "customize"->"外观设置";case "resource"->"资源设置";default->"官方扩展配置";});
         model.addAttribute("section",section.equals("extensions")?"extensions/config":section);
         model.addAttribute("groups",settings.groups(section));
         model.addAttribute("values",settings.values(section));
+        model.addAttribute("navbarColors",new java.util.TreeMap<>(SitePresentation.COLORS));
         return "admin/settings";
     }
 
-    @PostMapping("/admin/{section:options|score|customize}")
+    @PostMapping("/admin/{section:options|score|customize|resource}")
     public String saveSettings(Model model,@PathVariable String section,@RequestParam String option,@RequestParam Map<String,String> values) {
         try { settings.save(section,option,values); }
         catch(BusinessException error) {

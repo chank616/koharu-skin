@@ -3,13 +3,14 @@
 <head th:replace="~{fragments/assets :: head('管理后台')}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+    <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
         <a th:href="@{/admin/users}" class="nav-link">用户管理</a><a th:href="@{/admin/players}" class="nav-link">角色管理</a>
         <a th:href="@{/admin/reports}" class="nav-link">举报审核</a><a th:href="@{/admin/options}" class="nav-link">站点设置</a>
         <a th:href="@{/admin/score}" class="nav-link">积分设置</a><a th:href="@{/admin/extensions}" class="nav-link">官方扩展</a>
         <a th:href="@{/admin/status}" class="nav-link">运行状态</a>
         <a th:href="@{/admin/customize}" class="nav-link">外观设置</a>
+        <a th:href="@{/admin/resource}" class="nav-link">资源设置</a>
         <th:block th:replace="~{fragments/notifications :: bell}"></th:block>
         <button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
     </div></nav>

@@ -3,7 +3,7 @@
 <head th:replace="~{fragments/assets :: head('我的举报')}"></head>
 <body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
 <div class="wrapper">
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+    <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
         <a th:href="@{/user}" class="nav-link">用户中心</a><a th:href="@{/skinlib}" class="nav-link">皮肤库</a>
         <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
