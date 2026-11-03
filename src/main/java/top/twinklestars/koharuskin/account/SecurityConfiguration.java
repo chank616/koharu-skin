@@ -85,7 +85,12 @@ public class SecurityConfiguration {
                         response.setStatus(401);
                         response.setContentType("application/json;charset=UTF-8");
                         response.getWriter().write("{\"code\":1,\"message\":\"请先登录\"}");
-                    } else response.sendRedirect(request.getContextPath() + "/auth/login");
+                    } else {
+                        String path=request.getRequestURI().substring(request.getContextPath().length());
+                        if(request.getMethod().equals("GET")&&path.matches("/(user|admin|union)(/.*)?|/skinlib/upload"))
+                            request.getSession().setAttribute("login.returnTo",request.getRequestURI()+(request.getQueryString()==null?"":"?"+request.getQueryString()));
+                        response.sendRedirect(request.getContextPath() + "/auth/login");
+                    }
                 }))
                 .logout(config -> config.logoutUrl("/auth/logout").logoutSuccessHandler((request, response, auth) -> {
                     response.setContentType("application/json;charset=UTF-8");

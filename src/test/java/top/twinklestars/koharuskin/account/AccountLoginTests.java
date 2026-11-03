@@ -110,6 +110,41 @@ class AccountLoginTests {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("csrf-token")));
     }
 
+    @Test
+    void resumesTheRequestedPageWithItsQueryOnlyAfterSuccessfulLogin() throws Exception {
+        var session=new MockHttpSession();
+        mvc.perform(get(java.net.URI.create("/user/closet?q=Blue%20Skin&page=2")).session(session).accept("text/html"))
+                .andExpect(redirectedUrl("/auth/login"));
+        login("tester@example.invalid","wrong-password",false,session).andExpect(jsonPath("$.code").value(1));
+        // 随后的接口请求和浏览器图标请求不能覆盖待返回的页面。
+        mvc.perform(get("/user/score-info").session(session).accept("application/json")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/favicon.ico").session(session)).andExpect(redirectedUrl("/auth/login"));
+        login("tester@example.invalid","test-password",false,session)
+                .andExpect(jsonPath("$.data.redirectTo").value("/user/closet?q=Blue%20Skin&page=2"));
+        assertThat(session.getAttribute("login.returnTo")).isNull();
+        assertThat(top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(session)).isEqualTo("/user");
+    }
+
+    @Test
+    void oauthDestinationTakesPriorityAndClearsTheOrdinaryPageDestination() throws Exception {
+        var session=new MockHttpSession();
+        mvc.perform(get("/skinlib/upload").session(session)).andExpect(redirectedUrl("/auth/login"));
+        session.setAttribute("oauth.returnTo","/oauth/authorize?client_id=example&state=unchanged");
+        login("tester@example.invalid","test-password",false,session)
+                .andExpect(jsonPath("$.data.redirectTo").value("/oauth/authorize?client_id=example&state=unchanged"));
+        assertThat(session.getAttribute("login.returnTo")).isNull();
+        assertThat(session.getAttribute("oauth.returnTo")).isNull();
+    }
+
+    @Test
+    void returnPathUsesTheApplicationContextAndDoesNotTrustTheHostHeader() throws Exception {
+        var session=new MockHttpSession();
+        mvc.perform(get("/skin/user/closet").contextPath("/skin").session(session).header("Host","untrusted.example.invalid"))
+                .andExpect(redirectedUrl("/skin/auth/login"));
+        login("tester@example.invalid","test-password",false,session)
+                .andExpect(jsonPath("$.data.redirectTo").value("/skin/user/closet"));
+    }
+
     private org.springframework.test.web.servlet.ResultActions login(String identity, String password, boolean keep,
                                                                     MockHttpSession session) throws Exception {
         return mvc.perform(post("/auth/login").session(session).with(request -> {

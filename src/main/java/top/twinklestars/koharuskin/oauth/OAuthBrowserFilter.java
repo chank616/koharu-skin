@@ -25,7 +25,8 @@ public class OAuthBrowserFilter extends OncePerRequestFilter {
     }
     public static String afterLogin(HttpSession session) {
         String target=(String)session.getAttribute("oauth.returnTo"); session.removeAttribute("oauth.returnTo");
-        return target==null?"/user":target;
+        String page=(String)session.getAttribute("login.returnTo"); session.removeAttribute("login.returnTo");
+        return target!=null?target:page!=null?page:session.getServletContext().getContextPath()+"/user";
     }
     @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain) throws ServletException,IOException {
         if(!request.getRequestURI().equals(request.getContextPath()+"/oauth/authorize")) { chain.doFilter(request,response); return; }
