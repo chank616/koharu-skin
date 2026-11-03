@@ -6,6 +6,16 @@ import java.time.LocalDateTime;
 @Mapper
 public interface JanusMapper {
     record Token(String id,long userId,long clientId,String scopes,LocalDateTime createdAt,LocalDateTime expiresAt) {}
+    record Grant(String id,long clientId,String name,String scopes,LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime expiresAt) {}
+    @Select("""
+            SELECT t.id,t.client_id,t.name,COALESCE(t.scopes,'[]') AS scopes,t.created_at,t.updated_at,t.expires_at FROM oauth_access_tokens t
+            JOIN oauth_clients c ON c.id=t.client_id
+            WHERE t.user_id=#{uid} AND t.revoked=false AND c.revoked=false
+              AND c.personal_access_client=false AND c.password_client=false
+            """)
+    java.util.List<Grant> grants(long uid);
+    @Select("SELECT id,user_id,client_id,scopes,created_at,expires_at FROM oauth_access_tokens WHERE id=#{id} AND user_id=#{uid} FOR UPDATE")
+    Token lockOwned(String id,long uid);
     @Select("""
             SELECT t.id,t.user_id,t.client_id,t.scopes,t.created_at,t.expires_at FROM oauth_access_tokens t
             JOIN oauth_clients c ON c.id=t.client_id
@@ -38,6 +48,10 @@ public interface JanusMapper {
         // Janus 刷新时还会查询此授权记录；只撤销 Passport 的刷新令牌不足以停止刷新。
         revokeSelections(uid); revokeGrants(uid);
     }
+    @Delete("DELETE FROM code_id_to_uuid WHERE code_id IN (SELECT id FROM oauth_auth_codes WHERE client_id=#{id})")
+    void revokeClientSelections(long id);
+    @Delete("DELETE FROM oauth_auth_codes WHERE client_id=#{id}")
+    void revokeClientGrants(long id);
     @Select("SELECT changed_at FROM koharu_player_renames WHERE uuid=#{uuid}")
     Long renamedAt(String uuid);
     @Insert("INSERT INTO koharu_player_renames(uuid,changed_at) VALUES(#{uuid},#{changedAt}) ON DUPLICATE KEY UPDATE changed_at=#{changedAt}")

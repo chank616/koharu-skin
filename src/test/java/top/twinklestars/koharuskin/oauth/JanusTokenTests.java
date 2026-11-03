@@ -41,6 +41,7 @@ class JanusTokenTests {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired OAuthClients clients;
+    @Autowired AccountMapper accounts;
     @Autowired SiteOptions options;
     @Autowired JsonMapper json;
     @Autowired PlayerService players;
@@ -189,6 +190,53 @@ class JanusTokenTests {
     private ResultActions ygg(String path,Map<String,Object> body) throws Exception {
         return mvc.perform(post("/api/yggdrasil/"+path).contentType("application/json").content(json.writeValueAsString(body)));
     }
+    @Test void authorizedApplicationsIncludeLegacyTokensWithoutExposingSecretsOrInventingDates() throws Exception {
+        var issued=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        jdbc.update("INSERT INTO oauth_access_tokens(id,user_id,client_id,scopes,revoked) VALUES('legacy-undated',3101,?,NULL,false)",client.id());
+        var owner=org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(accounts.findById(3101));
+        mvc.perform(get("/oauth/tokens").with(owner)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(issued.id())).andExpect(jsonPath("$[0].client.name").value("Janus 客户端"))
+                .andExpect(jsonPath("$[0].client.secret").doesNotExist()).andExpect(jsonPath("$[0].access_token").doesNotExist())
+                .andExpect(jsonPath("$[1].id").value("legacy-undated")).andExpect(jsonPath("$[1].created_at").isEmpty())
+                .andExpect(jsonPath("$[1].scopes.length()").value(0));
+        mvc.perform(get("/oauth/tokens").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(accounts.findById(3102))))
+                .andExpect(jsonPath("$.length()").value(0));
+        jdbc.update("UPDATE oauth_access_tokens SET expires_at='2020-01-01 00:00:00' WHERE id=?",issued.id());
+        mvc.perform(get("/oauth/tokens").with(owner)).andExpect(jsonPath("$.length()").value(2));
+        jdbc.update("UPDATE oauth_clients SET personal_access_client=true WHERE id=?",client.id());
+        mvc.perform(get("/oauth/tokens").with(owner)).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test void userCanRevokeOnlyTheirLegacyGrantIncludingJanusRefreshAndJoinedSession() throws Exception {
+        var issued=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        var other=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        jdbc.update("INSERT INTO oauth_refresh_tokens(id,access_token_id,revoked,expires_at) VALUES('revoke-refresh',?,false,CURRENT_TIMESTAMP)",issued.id());
+        jdbc.update("INSERT INTO yggc_refresh_tokens(id,payload) VALUES('revoke-refresh','{}')");
+        join(issued.jwt(),ONE,"revoke-via-user-page").andExpect(status().isNoContent());
+        var owner=org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(accounts.findById(3101));
+        var csrf=org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf();
+        mvc.perform(delete("/oauth/tokens/"+issued.id()).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(accounts.findById(3102))).with(csrf))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete("/oauth/tokens/"+issued.id()).with(owner)).andExpect(status().isForbidden());
+        mvc.perform(delete("/oauth/tokens/"+issued.id()).with(owner).with(csrf)).andExpect(status().isNoContent());
+        info(issued.jwt()).andExpect(status().isUnauthorized());info(other.jwt()).andExpect(status().isOk());
+        joined("revoke-via-user-page","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT revoked FROM oauth_refresh_tokens WHERE id='revoke-refresh'",Boolean.class)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM yggc_refresh_tokens WHERE id='revoke-refresh'",Long.class)).isZero();
+        mvc.perform(get("/oauth/tokens").with(owner)).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(other.id()));
+    }
+
+    @Test void deletingClientRemovesJanusGrantsSoItsExistingRefreshCannotFindAccount() throws Exception {
+        var issued=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        var another=clients.create(3102,"Other client","https://other.example.invalid/callback",true);
+        jdbc.update("INSERT INTO oauth_auth_codes(id,user_id,client_id,scopes,revoked,expires_at) VALUES('client-grant',3101,?,'[]',true,CURRENT_TIMESTAMP),('other-grant',3102,?,'[]',true,CURRENT_TIMESTAMP)",client.id(),another.id());
+        jdbc.update("INSERT INTO code_id_to_uuid(code_id,uuid) VALUES('client-grant',?),('other-grant',?)",ONE,OTHER);
+        clients.revoke(3101,client.id());
+        info(issued.jwt()).andExpect(status().isUnauthorized());
+        assertThat(jdbc.queryForList("SELECT id FROM oauth_auth_codes",String.class)).containsExactly("other-grant");
+        assertThat(jdbc.queryForList("SELECT code_id FROM code_id_to_uuid",String.class)).containsExactly("other-grant");
+    }
+
     private ResultActions join(String token,String profile,String server) throws Exception {
         return ygg("sessionserver/session/minecraft/join",Map.of("accessToken",token,"selectedProfile",profile,"serverId",server));
     }

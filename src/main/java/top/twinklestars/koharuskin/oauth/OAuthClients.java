@@ -15,8 +15,9 @@ import java.util.List;
 @Service
 public class OAuthClients {
     private final OAuthClientMapper clients;
+    private final JanusMapper legacy;
     private final SecureRandom random=new SecureRandom();
-    public OAuthClients(OAuthClientMapper clients) { this.clients=clients; }
+    public OAuthClients(OAuthClientMapper clients,JanusMapper legacy) { this.clients=clients;this.legacy=legacy; }
 
     public List<OAuthClient> list(long uid) { return clients.list(uid); }
 
@@ -47,6 +48,9 @@ public class OAuthClients {
         clients.revokeAccessTokens(id);
         clients.revokeRefreshTokens(id);
         clients.revokeCodes(id);
+        // Janus 刷新时仍使用已消费的授权码，必须移除对应授权才能停止续期。
+        legacy.revokeClientSelections(id);
+        legacy.revokeClientGrants(id);
     }
 
     private OAuthClient owned(long uid,long id) {

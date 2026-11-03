@@ -131,7 +131,7 @@ class OAuthClientsTests {
         });
     }
 
-    @Test void revocationPreservesLegacyRowsAndRevokesOnlyRelatedGrants() throws Exception {
+    @Test void revocationPreservesClientAndTokenHistoryAndRemovesOnlyRelatedAuthorizationCodes() throws Exception {
         long id=create("待撤销","https://client.example.invalid/callback",null).path("id").asLong();
         long untouched=clients.create(other.uid(),"其他用户","https://other.example.invalid",true).id();
         for(long client:List.of(id,untouched)) {
@@ -141,10 +141,11 @@ class OAuthClientsTests {
         }
         mvc.perform(delete("/oauth/clients/"+id).with(user(owner)).with(csrf())).andExpect(status().isNoContent());
         mvc.perform(get("/oauth/clients").with(user(owner))).andExpect(content().json("[]"));
-        for(String table:List.of("oauth_clients","oauth_access_tokens","oauth_refresh_tokens","oauth_auth_codes")) {
+        for(String table:List.of("oauth_clients","oauth_access_tokens","oauth_refresh_tokens")) {
             assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class)).isEqualTo(2);
             assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM "+table+" WHERE revoked=true",Integer.class)).isOne();
         }
+        assertThat(jdbc.queryForList("SELECT id FROM oauth_auth_codes",String.class)).containsExactly("code-"+untouched);
         assertThat(clients.list(other.uid())).hasSize(1).first().extracting(OAuthClient::id).isEqualTo(untouched);
         mvc.perform(delete("/oauth/clients/"+id).with(user(owner)).with(csrf())).andExpect(status().isNoContent());
         mvc.perform(put("/oauth/clients/"+id).with(user(owner)).with(csrf()).contentType("application/json")

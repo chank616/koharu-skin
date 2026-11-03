@@ -6,7 +6,7 @@ import Loading from '@/components/Loading'
 type Grant = {
   id: string
   scopes: string[]
-  created_at: string
+  created_at: string | null
   expires_at: string
   client: { id: number; name: string; redirect: string }
 }
@@ -51,7 +51,7 @@ const AuthorizedApps: React.FC = () => {
               <tr key={grant.id}>
                 <td>{grant.client.name}</td>
                 <td>{grant.scopes.map((scope) => descriptions[scope] || scope).join('；')}</td>
-                <td>{new Date(grant.created_at).toLocaleString()}</td>
+                <td>{grant.created_at ? new Date(grant.created_at).toLocaleString() : '未知'}</td>
                 <td><button className="btn btn-danger" onClick={() => revoke(grant)}>撤销此次授权</button></td>
               </tr>
             ))}
