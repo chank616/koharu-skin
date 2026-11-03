@@ -228,7 +228,7 @@ public class AdminSettings {
         }
         options.lockRegistration();
         values.forEach((key,value)-> { if(options.get(key)==null) options.insert(key,value); else options.update(key,value); });
-        values.forEach((key,value)-> { if(localizedField(key)) { String localized=key+"_zh_CN";
+        values.forEach((key,value)-> { if(localizedField(key)) { String localized=key+"_"+top.twinklestars.koharuskin.site.SiteLocale.current();
             if(options.get(localized)==null) options.insert(localized,value); else options.update(localized,value); } });
     }
 

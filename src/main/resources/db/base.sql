@@ -152,3 +152,12 @@ WHERE NOT EXISTS (SELECT 1 FROM options WHERE option_name='register_with_player_
 INSERT INTO options(option_name,option_value)
 SELECT 'koharu_installed',CASE WHEN EXISTS (SELECT 1 FROM users) THEN 'true' ELSE 'false' END
 WHERE NOT EXISTS (SELECT 1 FROM options WHERE option_name='koharu_installed');
+
+CREATE TABLE IF NOT EXISTS language_lines (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    `group` VARCHAR(255) NOT NULL,
+    `key` VARCHAR(255) NOT NULL,
+    text TEXT NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);

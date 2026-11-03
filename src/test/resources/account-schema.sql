@@ -117,3 +117,12 @@ CREATE TABLE IF NOT EXISTS ygg_log (
     user_id INT NOT NULL, player_id INT NOT NULL, parameters VARCHAR(255) DEFAULT '',
     ip VARCHAR(255) DEFAULT '', time DATETIME NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS language_lines (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    `group` VARCHAR(255) NOT NULL,
+    `key` VARCHAR(255) NOT NULL,
+    text TEXT NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);

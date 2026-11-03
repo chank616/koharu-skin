@@ -17,7 +17,7 @@ public interface SiteOptions {
         return value == null ? fallback : value;
     }
 
-    default String localized(String name,String fallback) { return text(name+"_zh_CN",text(name,fallback)); }
+    default String localized(String name,String fallback) { return text(name+"_"+SiteLocale.current(),text(name,fallback)); }
 
     default int number(String name, int fallback) {
         String value = text(name, "" + fallback);

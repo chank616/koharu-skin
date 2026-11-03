@@ -1,12 +1,10 @@
 package top.twinklestars.koharuskin.site;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.yaml.snakeyaml.Yaml;
 import top.twinklestars.koharuskin.account.AccountUser;
 import top.twinklestars.koharuskin.account.LoginAttempts;
 import top.twinklestars.koharuskin.player.PlayerMapper;
@@ -21,13 +19,12 @@ import top.twinklestars.koharuskin.account.BusinessException;
 import top.twinklestars.koharuskin.account.ProfileMapper;
 import top.twinklestars.koharuskin.extension.OfficialExtensions;
 
-import java.io.IOException;
 import java.util.Map;
 
 @Controller
 public class PageController {
     private final LoginAttempts attempts;
-    private final Map<String, Object> translations;
+    private final SiteTranslations translations;
     private final SiteOptions options;
     private final PlayerMapper players;
     private final PlayerService playerService;
@@ -73,7 +70,7 @@ public class PageController {
                           top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles,
                           top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist,
                           top.twinklestars.koharuskin.oauth.YggConnect yggConnect,
-                          top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs) throws IOException {
+                          top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs,SiteTranslations translations) {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -100,9 +97,7 @@ public class PageController {
         this.unionBlacklist=unionBlacklist;
         this.yggConnect=yggConnect;
         this.yggLogs=yggLogs;
-        try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
-            translations = new Yaml().load(input);
-        }
+        this.translations=translations;
     }
 
     @org.springframework.web.bind.annotation.ModelAttribute
@@ -128,6 +123,15 @@ public class PageController {
         else try { model.addAttribute("unionProfiles",unionProfiles.profiles(user.uid())); }
         catch(org.springframework.web.server.ResponseStatusException error) { model.addAttribute("unionError",error.getReason()); }
         return "user/union";
+    }
+
+    @GetMapping("/admin/i18n")
+    public String translationPage(Model model) {
+        page(model,"admin/i18n",Map.of());
+        model.addAttribute("title",translations.text("general.i18n"));
+        model.addAttribute("languages",SiteLocale.LANGUAGES);
+        if(!model.containsAttribute("translationForm")) model.addAttribute("translationForm",new top.twinklestars.koharuskin.admin.AdminTranslationsController.Form("","",""));
+        return "admin/i18n";
     }
 
     @GetMapping("/admin/yggdrasil-log")
@@ -373,7 +377,7 @@ public class PageController {
         model.addAttribute("siteName", siteName);
         model.addAttribute("siteDescription",options.localized("site_description",""));
         model.addAttribute("blessing", Map.of("base_url", "", "route", route, "site_name", siteName,
-                "locale", "zh_CN", "version", "0.0.1", "debug", false, "env", "production", "i18n", translations));
+                "locale", SiteLocale.current(), "version", "0.0.1", "debug", false, "env", "production", "i18n", translations.group("front-end")));
         model.addAttribute("extra", extra);
     }
 
