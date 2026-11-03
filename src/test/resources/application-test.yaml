@@ -7,6 +7,6 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:account-schema.sql,classpath:db/yggdrasil.sql
+      schema-locations: classpath:account-schema.sql,classpath:db/yggdrasil.sql,classpath:db/oauth.sql
 koharu:
   remember-key: local-test-key-not-for-deployment

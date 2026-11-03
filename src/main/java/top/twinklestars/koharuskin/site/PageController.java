@@ -42,6 +42,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.admin.AdminDashboard dashboard;
     private final top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer;
     private final top.twinklestars.koharuskin.extension.henan.HenanLogin henan;
+    private final top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -52,7 +53,8 @@ public class PageController {
                           top.twinklestars.koharuskin.notification.NotificationService notifications,
                           top.twinklestars.koharuskin.admin.AdminDashboard dashboard,
                           top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer,
-                          top.twinklestars.koharuskin.extension.henan.HenanLogin henan) throws IOException {
+                          top.twinklestars.koharuskin.extension.henan.HenanLogin henan,
+                          top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -68,6 +70,7 @@ public class PageController {
         this.dashboard = dashboard;
         this.xiqueer = xiqueer;
         this.henan = henan;
+        this.oauthConsent=oauthConsent;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -86,6 +89,17 @@ public class PageController {
         playerService.requireVerified(user.uid());
         page(model,"user/oauth/manage",Map.of());
         return "user/oauth";
+    }
+
+    @GetMapping("/oauth/consent")
+    public String consent(Model model,@AuthenticationPrincipal AccountUser user,@RequestParam("client_id") String clientId,@RequestParam String state) {
+        playerService.requireVerified(user.uid());
+        page(model,"oauth/consent",Map.of()); model.addAttribute("consent",oauthConsent.show(user,clientId,state));
+        return "auth/oauth-consent";
+    }
+    @PostMapping("/oauth/deny")
+    public String denyConsent(@AuthenticationPrincipal AccountUser user,@RequestParam String state) {
+        return "redirect:"+oauthConsent.deny(user,state);
     }
 
     @GetMapping("/user/profile")
@@ -223,7 +237,7 @@ public class PageController {
 
     @GetMapping("/auth/login")
     public String login(Model model, HttpServletRequest request, @AuthenticationPrincipal AccountUser user) {
-        if (user != null) return "redirect:/user";
+        if (user != null) return "redirect:"+top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession());
         page(model, "auth/login", Map.of("tooManyFails", attempts.count(request.getRemoteAddr()) > 3,
                 "recaptcha", "", "invisible", false));
         return "auth/login";

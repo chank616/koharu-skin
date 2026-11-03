@@ -1,0 +1,49 @@
+package top.twinklestars.koharuskin.oauth;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.*;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.web.*;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
+import org.springframework.security.web.context.*;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.transaction.PlatformTransactionManager;
+import top.twinklestars.koharuskin.account.*;
+import top.twinklestars.koharuskin.site.SiteOptions;
+
+@Configuration
+public class OAuthSecurity {
+    @Bean AuthorizationServerSettings authorizationServerSettings(@Value("${koharu.public-url}") String publicUrl) {
+        return AuthorizationServerSettings.builder().issuer(publicUrl.replaceAll("/+$",""))
+                .authorizationEndpoint("/oauth/authorize").tokenEndpoint("/oauth/token")
+                .tokenRevocationEndpoint("/oauth/revoke").tokenIntrospectionEndpoint("/oauth/introspect").build();
+    }
+    @Bean @Order(3)
+    SecurityFilterChain oauthAuthorization(HttpSecurity http,SecurityContextRepository contexts,HttpSessionCsrfTokenRepository csrf,
+                                           AccountMapper users,SiteOptions options,@Value("${koharu.remember-key}") String key,
+                                           PlatformTransactionManager transactions) throws Exception {
+        http.oauth2AuthorizationServer(server->{
+            http.securityMatcher(server.getEndpointsMatcher());
+            server.authorizationEndpoint(endpoint->endpoint.consentPage("/oauth/consent"));
+            server.clientAuthentication(client->client.authenticationProviders(providers->providers.forEach(provider->{
+                if(provider instanceof org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider secret)
+                    secret.setPasswordEncoder(new org.springframework.security.crypto.password.PasswordEncoder() {
+                        private final org.springframework.security.crypto.password.PasswordEncoder delegate=org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
+                        @Override public String encode(CharSequence raw) { return delegate.encode(raw); }
+                        @Override public boolean matches(CharSequence raw,String encoded) { return delegate.matches(raw,encoded); }
+                        // 旧管理页需要显示原密钥，不能在认证时自动改写旧表。
+                        @Override public boolean upgradeEncoding(String encoded) { return false; }
+                    });
+            })));
+        });
+        http.authorizeHttpRequests(auth->auth.anyRequest().authenticated())
+                .securityContext(context->context.securityContextRepository(contexts))
+                .csrf(config->config.csrfTokenRepository(csrf))
+                .addFilterBefore(new OAuthTransactionFilter(transactions),SecurityContextHolderFilter.class)
+                .addFilterBefore(new AccountSessionFilter(users,contexts,key),LogoutFilter.class)
+                .addFilterAfter(new OAuthBrowserFilter(csrf,users,options),AccountSessionFilter.class);
+        return http.build();
+    }
+}

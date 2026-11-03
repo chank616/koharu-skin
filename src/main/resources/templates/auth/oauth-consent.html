@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('应用授权')}"></head>
+<body class="hold-transition login-page" th:classappend="${darkMode} ? 'dark-mode'">
+<main class="login-box"><div class="card"><div class="card-body">
+    <h1 class="h4">应用授权</h1><p><strong th:text="${consent.clientName}"></strong> 希望访问你的账号：</p>
+    <form method="post" th:action="@{/oauth/authorize}">
+        <input type="hidden" name="client_id" th:value="${consent.clientId}"><input type="hidden" name="state" th:value="${consent.state}">
+        <div class="form-check mb-2" th:each="permission : ${consent.permissions}">
+            <input type="checkbox" class="form-check-input" name="scope" th:id="${'scope-'+permission.id}" th:value="${permission.id}" checked th:disabled="${permission.granted}">
+            <label class="form-check-label" th:for="${'scope-'+permission.id}" th:text="${permission.description}"></label>
+            <small class="text-muted" th:if="${permission.granted}">已授权</small>
+        </div>
+        <button class="btn btn-primary mt-3" type="submit">允许访问</button>
+    </form>
+    <form method="post" th:action="@{/oauth/deny}" class="mt-2"><input type="hidden" name="state" th:value="${consent.state}"><button class="btn btn-outline-secondary" type="submit">拒绝</button></form>
+</div></div></main>
+</body></html>

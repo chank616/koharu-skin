@@ -36,7 +36,7 @@ public class HenanController {
             if(operation.equals("register")&&!CaptchaController.verify(request.getSession(),input.captcha())) throw new BusinessException("请输入正确的图片验证码");
             var result=login.start(operation,input.school(),input.identification(),input.password(),input.site_password(),input.player_name(),request.getRemoteAddr(),request.getSession());
             if(result.token()!=null) return "redirect:/auth/mfa/henan/"+result.token();
-            establish(result.user(),request,response); return "redirect:/user";
+            establish(result.user(),request,response); return "redirect:"+top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession());
         } catch(BusinessException error) { flash.addFlashAttribute("henanError",error.getMessage()); return target; }
     }
     @PostMapping("/auth/mfa/henan/{token:[a-f0-9]{64}}/{action:send|verify|cancel}")
@@ -50,7 +50,7 @@ public class HenanController {
             if(action.equals("send")) { login.send(session,token); flash.addFlashAttribute("henanMessage","短信验证码已发送，请查看学校绑定的手机"); }
             else {
                 if(code==null||!code.matches("[0-9]{4,8}")) throw new BusinessException("请输入 4～8 位数字验证码");
-                var account=login.verify(session,token,code,request.getRemoteAddr()); establish(account,request,response); return "redirect:/user";
+                var account=login.verify(session,token,code,request.getRemoteAddr()); establish(account,request,response); return "redirect:"+top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(session);
             }
         } catch(HenanLogin.Expired error) {
             flash.addFlashAttribute("henanError",error.getMessage()); return "redirect:/auth/login/henan";
