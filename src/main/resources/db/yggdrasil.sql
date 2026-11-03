@@ -27,3 +27,15 @@ CREATE TABLE IF NOT EXISTS koharu_player_renames (
     uuid VARCHAR(36) PRIMARY KEY,
     changed_at BIGINT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS koharu_ygg_oauth_tokens (
+    token_hash CHAR(64) PRIMARY KEY,
+    source VARCHAR(8) NOT NULL,
+    token_id VARCHAR(100) NOT NULL,
+    user_uid BIGINT NOT NULL,
+    profile_uuid VARCHAR(36) NOT NULL,
+    profile_name VARCHAR(50) NOT NULL,
+    credentials_hash CHAR(64) NOT NULL,
+    issued_at BIGINT NOT NULL,
+    expires_at BIGINT NOT NULL,
+    INDEX ygg_oauth_expiry (expires_at)
+);

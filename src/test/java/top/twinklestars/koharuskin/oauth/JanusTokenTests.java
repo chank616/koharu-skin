@@ -47,11 +47,13 @@ class JanusTokenTests {
     @Autowired PlayerMapper playerMapper;
     @Autowired ProfileService profiles;
     @Autowired AdminUsersService admin;
+    @Autowired top.twinklestars.koharuskin.yggdrasil.YggKeys textureKeys;
     OAuthClient client;
     static final String ISSUER="https://janus.example.invalid",ONE="11111111111141118111111111111111",OTHER="22222222222242228222222222222222";
     record Issued(String id,String jwt,JWTClaimsSet claims) {}
     @BeforeEach void fixture() {
-        for(String table:List.of("koharu_player_renames","code_id_to_uuid","oauth_auth_codes","oauth_refresh_tokens","oauth_access_tokens","oauth_clients","uuid","players","users","options"))jdbc.update("DELETE FROM "+table);
+        jdbc.execute("CREATE TABLE IF NOT EXISTS yggc_refresh_tokens(id VARCHAR(255) PRIMARY KEY,payload JSON,uid VARCHAR(255),consumed BOOLEAN DEFAULT false,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,updated_at TIMESTAMP)");
+        for(String table:List.of("yggc_refresh_tokens","koharu_ygg_oauth_tokens","koharu_ygg_sessions","koharu_ygg_tokens","koharu_player_renames","code_id_to_uuid","oauth_auth_codes","oauth_refresh_tokens","oauth_access_tokens","oauth_clients","uuid","players","users","options"))jdbc.update("DELETE FROM "+table);
         String password=new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(4).encode("test-password");
         for(int uid=3101;uid<=3103;uid++)jdbc.update("INSERT INTO users(uid,email,nickname,password,permission,score,ip,register_at,last_sign_at,verified) VALUES(?,?,?, ?,?,1000,'127.0.0.1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,true)",uid,"janus"+uid+"@example.invalid","Janus"+uid,password,uid==3103?2:0);
         jdbc.update("INSERT INTO players(pid,uid,name,tid_skin,tid_cape,last_modified) VALUES(3101,3101,'OwnPlayer',0,0,CURRENT_TIMESTAMP),(3102,3102,'OtherPlayer',0,0,CURRENT_TIMESTAMP)");
@@ -121,6 +123,73 @@ class JanusTokenTests {
         jdbc.update("UPDATE users SET permission=0,verified=false WHERE uid=3101");options.insert("require_verification","true");info(issued.jwt()).andExpect(status().isUnauthorized());
         jdbc.update("UPDATE users SET verified=true WHERE uid=3101");info(issued.jwt()).andExpect(status().isOk());
         options.update("plugins_enabled","[]");info(issued.jwt()).andExpect(status().isUnauthorized());
+    }
+    @Test void janusTokenJoinsOnlySelectedProfileAndReturnsSignedTextureProperties() throws Exception {
+        options.update("plugins_enabled","[\"yggdrasil-connect\"]");
+        mvc.perform(get("/api/yggdrasil")).andExpect(status().isOk()).andExpect(jsonPath("$.meta['feature.openid_configuration_url']").value(ISSUER+"/.well-known/openid-configuration"));
+        var token=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        ygg("authserver/validate",Map.of("accessToken",token.jwt())).andExpect(status().isNoContent());
+        join(token.jwt(),OTHER,"wrong-role").andExpect(status().isForbidden());
+        join(token.jwt(),ONE,"janus-server").andExpect(status().isNoContent());
+        var response=joined("janus-server","OwnPlayer","127.0.0.1").andExpect(status().isOk()).andExpect(jsonPath("$.id").value(ONE)).andReturn();
+        var property=json.readTree(response.getResponse().getContentAsString()).get("properties").get(0);
+        var verifier=Signature.getInstance("SHA1withRSA");verifier.initVerify(textureKeys.pair().getPublic());
+        verifier.update(property.get("value").asString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assertThat(verifier.verify(Base64.getDecoder().decode(property.get("signature").asString()))).isTrue();
+        assertThat(jdbc.queryForObject("SELECT token_hash FROM koharu_ygg_oauth_tokens",String.class)).isEqualTo(OAuthAuthorizations.hash(token.jwt()));
+        joined("janus-server","OtherPlayer","127.0.0.1").andExpect(status().isNoContent());
+        joined("janus-server","OwnPlayer","192.0.2.1").andExpect(status().isNoContent());
+        ygg("authserver/refresh",Map.of("accessToken",token.jwt())).andExpect(status().isForbidden());
+        jdbc.update("UPDATE oauth_access_tokens SET revoked=true WHERE id=?",token.id());
+        joined("janus-server","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+        ygg("authserver/validate",Map.of("accessToken",token.jwt())).andExpect(status().isForbidden());
+    }
+    @Test void gameAccessRequiresJoinScopeAndRechecksRoleExtensionAndExpiry() throws Exception {
+        join(issue(Set.of("openid",OAuthScopes.SELECT),ONE).jwt(),ONE,"without-join").andExpect(status().isForbidden());
+        join(issue(Set.of("openid",OAuthScopes.READ),null).jwt(),ONE,"read-only").andExpect(status().isForbidden());
+        var token=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        join(token.jwt(),ONE,"live-check").andExpect(status().isNoContent());
+        jdbc.update("UPDATE players SET uid=3102 WHERE pid=3101");joined("live-check","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+        jdbc.update("UPDATE players SET uid=3101 WHERE pid=3101");
+        options.update("plugins_enabled","[\"yggdrasil-api\"]");joined("live-check","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+        options.update("plugins_enabled","[\"yggdrasil-api\",\"yggdrasil-connect\"]");
+        jdbc.update("UPDATE oauth_access_tokens SET scopes='[\"openid\"]' WHERE id=?",token.id());joined("live-check","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+        jdbc.update("UPDATE oauth_access_tokens SET scopes=? WHERE id=?",json.writeValueAsString(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN)),token.id());
+        joined("live-check","OwnPlayer","127.0.0.1").andExpect(status().isOk());
+        jdbc.update("UPDATE koharu_ygg_oauth_tokens SET expires_at=0");joined("live-check","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+    }
+    @Test void invalidationDeletesJanusRefreshStoreEntryAndOnlyRevokesRequestedToken() throws Exception {
+        var token=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        var other=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        jdbc.update("INSERT INTO oauth_refresh_tokens(id,access_token_id,revoked,expires_at) VALUES('janus-refresh',?,false,?)",token.id(),LocalDateTime.now().plusDays(1));
+        jdbc.update("INSERT INTO yggc_refresh_tokens(id) VALUES('janus-refresh')");
+        join(token.jwt(),ONE,"revoked-session").andExpect(status().isNoContent());
+        ygg("authserver/invalidate",Map.of("accessToken",token.jwt())).andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM yggc_refresh_tokens WHERE id='janus-refresh'",Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT revoked FROM oauth_refresh_tokens WHERE id='janus-refresh'",Boolean.class)).isTrue();
+        joined("revoked-session","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());
+        join(token.jwt(),ONE,"cannot-reuse").andExpect(status().isForbidden());
+        join(other.jwt(),ONE,"other-grant").andExpect(status().isNoContent());
+        ygg("authserver/invalidate",Map.of("accessToken",token.jwt())).andExpect(status().isNoContent());
+        ygg("authserver/invalidate",Map.of("accessToken","invalid.jwt.value")).andExpect(status().isNoContent());
+        jdbc.execute("DROP TABLE yggc_refresh_tokens");
+        ygg("authserver/invalidate",Map.of("accessToken",other.jwt())).andExpect(status().isNoContent());
+        info(other.jwt()).andExpect(status().isUnauthorized());
+    }
+    @Test void passwordSignoutRevokesGameTokensAndTheirPendingSessions() throws Exception {
+        var token=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
+        join(token.jwt(),ONE,"signout-session").andExpect(status().isNoContent());
+        ygg("authserver/signout",Map.of("username","janus3101@example.invalid","password","test-password")).andExpect(status().isNoContent());
+        joined("signout-session","OwnPlayer","127.0.0.1").andExpect(status().isNoContent());info(token.jwt()).andExpect(status().isUnauthorized());
+    }
+    private ResultActions ygg(String path,Map<String,Object> body) throws Exception {
+        return mvc.perform(post("/api/yggdrasil/"+path).contentType("application/json").content(json.writeValueAsString(body)));
+    }
+    private ResultActions join(String token,String profile,String server) throws Exception {
+        return ygg("sessionserver/session/minecraft/join",Map.of("accessToken",token,"selectedProfile",profile,"serverId",server));
+    }
+    private ResultActions joined(String server,String name,String ip) throws Exception {
+        return mvc.perform(get("/api/yggdrasil/sessionserver/session/minecraft/hasJoined").param("username",name).param("serverId",server).param("ip",ip));
     }
     private Issued issue(Set<String> scopes,String selected) throws Exception {
         String id=UUID.randomUUID().toString(); var now=Instant.now();

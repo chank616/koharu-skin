@@ -24,13 +24,15 @@ public class YggAuth {
     private final PasswordEncoder passwords;
     private final SiteOptions options;
     private final Clock clock;
+    private final YggOAuth oauth;
     private final SecureRandom random=new SecureRandom();
     private final ConcurrentHashMap<String,Long> attempts=new ConcurrentHashMap<>();
 
     public YggAuth(YggMapper tokens, AccountMapper accounts, PlayerMapper players, YggProfiles profiles,
-                   PasswordEncoder passwords, SiteOptions options, Clock clock) {
+                   PasswordEncoder passwords, SiteOptions options, Clock clock,YggOAuth oauth) {
         this.tokens=tokens; this.accounts=accounts; this.players=players; this.profiles=profiles;
         this.passwords=passwords; this.options=options; this.clock=clock;
+        this.oauth=oauth;
     }
 
     @Transactional
@@ -65,10 +67,15 @@ public class YggAuth {
         return issue(account,token.clientToken(),selected,requestUser,players.list(account.uid()));
     }
 
-    public void validate(String accessToken,String clientToken) { check(tokens.find(hash(accessToken)),clientToken,false); }
+    public void validate(String accessToken,String clientToken) {
+        var token=tokens.find(hash(accessToken));
+        if(token==null) oauth.read(accessToken); else check(token,clientToken,false);
+    }
 
     @Transactional
-    public void invalidate(String accessToken) { tokens.delete(hash(accessToken)); }
+    public void invalidate(String accessToken) {
+        tokens.delete(hash(accessToken));oauth.invalidate(accessToken);
+    }
 
     @Transactional
     public void signout(String name,String password) {
@@ -76,21 +83,32 @@ public class YggAuth {
         options.lockRegistration();
         accounts.lockById(account.uid());
         tokens.revokeUser(account.uid());
+        oauth.signout(account.uid());
     }
 
     @Transactional
     public void join(String accessToken,String profileId,String serverId,String ip) {
         var token=tokens.lock(hash(accessToken));
-        check(token,null,false);
-        if (token.playerPid()==null || !players.uuid(players.find(token.playerPid()).name()).replace("-","").equals(profileId)) throw YggException.invalid();
+        if(token==null) {
+            var external=oauth.read(accessToken);
+            if(!external.profileUuid().equals(profileId)) throw YggException.invalid();
+            oauth.remember(external);
+        } else {
+            check(token,null,false);
+            if (token.playerPid()==null || !players.uuid(players.find(token.playerPid()).name()).replace("-","").equals(profileId)) throw YggException.invalid();
+        }
         tokens.deleteExpiredSessions(now());
-        tokens.join(new YggMapper.Join(hash(serverId),token.tokenHash(),ip,now()+120));
+        tokens.join(new YggMapper.Join(hash(serverId),hash(accessToken),ip,now()+120));
     }
 
     public Map<String,Object> hasJoined(String name,String serverId,String ip) {
         var session=tokens.session(hash(serverId));
         if (session==null || session.expiresAt()<=now() || (ip!=null && !ip.equals(session.clientIp()))) return null;
         var token=tokens.find(session.tokenHash());
+        if(token==null) {
+            var player=oauth.joined(session.tokenHash());
+            return player!=null&&player.name().equalsIgnoreCase(name)?profiles.full(player,false):null;
+        }
         if (!usable(token,false) || token.playerPid()==null) return null;
         var player=players.find(token.playerPid());
         if (!player.name().equalsIgnoreCase(name)) return null;
@@ -100,6 +118,13 @@ public class YggAuth {
     public AccountUser bearer(String authorization,String profileId) {
         if (authorization==null || !authorization.regionMatches(true,0,"Bearer ",0,7)) throw new YggException(401,"Unauthorized","Missing access token.");
         var token=tokens.find(hash(authorization.substring(7)));
+        if(token==null) {
+            YggOAuthMapper.Token external;
+            try { external=oauth.read(authorization.substring(7)); }
+            catch(YggException error) { throw new YggException(401,"Unauthorized","Invalid token."); }
+            if(!external.profileUuid().equals(profileId)) throw YggException.forbidden("The selected profile does not match this token.");
+            return accounts.findById(external.userUid());
+        }
         if (!usable(token,false)) throw new YggException(401,"Unauthorized","Invalid token.");
         var player=tokens.profile(profileId);
         if (player==null) throw new YggException(404,"Not Found","Profile not found.");

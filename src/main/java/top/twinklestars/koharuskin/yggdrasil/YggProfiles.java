@@ -21,10 +21,12 @@ public class YggProfiles {
     private final JsonMapper json;
     private final Clock clock;
     private final String publicUrl;
+    private final top.twinklestars.koharuskin.extension.OfficialExtensions extensions;
     public YggProfiles(PlayerService players, TextureMapper textures, SiteOptions options, YggKeys keys,
-                       JsonMapper json, Clock clock, @Value("${koharu.public-url}") String publicUrl) {
+                       JsonMapper json, Clock clock, @Value("${koharu.public-url}") String publicUrl,top.twinklestars.koharuskin.extension.OfficialExtensions extensions) {
         this.players=players; this.textures=textures; this.options=options; this.keys=keys; this.json=json; this.clock=clock;
         this.publicUrl=publicUrl.replaceAll("/+$","");
+        this.extensions=extensions;
     }
 
     public Map<String,String> simple(Player player) {
@@ -55,8 +57,11 @@ public class YggProfiles {
         Set<String> domains=new LinkedHashSet<>();
         domains.add(URI.create(publicUrl).getHost());
         Arrays.stream(options.text("ygg_skin_domain","").split(",")).map(String::trim).filter(domain -> !domain.isEmpty()).forEach(domains::add);
-        return Map.of("meta",Map.of("serverName",options.text("site_name","Koharu Skin"),"implementationName","Koharu Skin",
-                        "implementationVersion","0.0.1","links",Map.of("homepage",publicUrl,"register",publicUrl+"/auth/register"),"feature.non_email_login",true),
+        var meta=new LinkedHashMap<String,Object>(Map.of("serverName",options.text("site_name","Koharu Skin"),"implementationName","Koharu Skin",
+                "implementationVersion","0.0.1","links",Map.of("homepage",publicUrl,"register",publicUrl+"/auth/register"),"feature.non_email_login",true));
+        String issuer=options.text("ygg_connect_server_url","").replaceAll("/+$","");
+        if(extensions.enabled("yggdrasil-connect")&&!issuer.isBlank()) meta.put("feature.openid_configuration_url",issuer+"/.well-known/openid-configuration");
+        return Map.of("meta",meta,
                 "skinDomains",domains,"signaturePublickey",YggKeys.pem("PUBLIC KEY",keys.pair().getPublic().getEncoded()));
     }
 }

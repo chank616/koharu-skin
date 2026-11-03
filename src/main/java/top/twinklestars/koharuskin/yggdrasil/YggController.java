@@ -40,7 +40,7 @@ public class YggController {
     }
 
     @ModelAttribute public void enabled() {
-        if (!extensions.enabled("yggdrasil-api")) throw new YggException(404,"Not Found","External authentication is disabled.");
+        if (!extensions.enabled("yggdrasil-api")&&!extensions.enabled("yggdrasil-connect")) throw new YggException(404,"Not Found","External authentication is disabled.");
     }
 
     @GetMapping({"","/"}) public Map<String,Object> metadata() { return profiles.metadata(); }

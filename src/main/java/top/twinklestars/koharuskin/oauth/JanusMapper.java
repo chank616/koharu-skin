@@ -12,6 +12,19 @@ public interface JanusMapper {
             WHERE t.id=#{id} AND t.revoked=false AND c.revoked=false AND t.expires_at>CURRENT_TIMESTAMP
             """)
     Token find(String id);
+    @Select("SELECT COUNT(*) FROM information_schema.tables WHERE LOWER(table_schema)=LOWER(SCHEMA()) AND LOWER(table_name)='yggc_refresh_tokens'")
+    int hasRefreshStore();
+    @Delete("DELETE FROM yggc_refresh_tokens WHERE id IN (SELECT id FROM oauth_refresh_tokens WHERE access_token_id=#{id})")
+    void revokeJanusRefresh(String id);
+    @Update("UPDATE oauth_refresh_tokens SET revoked=true WHERE access_token_id=#{id}")
+    void revokeTokenRefresh(String id);
+    @Update("UPDATE oauth_access_tokens SET revoked=true,updated_at=CURRENT_TIMESTAMP WHERE id=#{id}")
+    void revokeTokenAccess(String id);
+    default void revokeToken(String id) {
+        // 未部署独立 Janus 服务的旧站没有此表。
+        if(hasRefreshStore()>0) revokeJanusRefresh(id);
+        revokeTokenRefresh(id);revokeTokenAccess(id);
+    }
     @Update("UPDATE oauth_access_tokens SET revoked=true,updated_at=CURRENT_TIMESTAMP WHERE user_id=#{uid}")
     void revokeAccess(long uid);
     @Update("UPDATE oauth_refresh_tokens SET revoked=true WHERE access_token_id IN (SELECT id FROM oauth_access_tokens WHERE user_id=#{uid})")

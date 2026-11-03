@@ -41,7 +41,7 @@ class YggConnectTests {
     OAuthClient client;
     record Grant(String code,String id,MockHttpSession session,String state) {}
     @BeforeEach void fixture() {
-        for(String table:List.of("code_id_to_uuid","koharu_oauth_authorizations","koharu_oauth_consents","oauth_refresh_tokens","oauth_auth_codes","oauth_access_tokens","oauth_clients","scopes","uuid","players","users","options"))jdbc.update("DELETE FROM "+table);
+        for(String table:List.of("koharu_ygg_oauth_tokens","koharu_ygg_sessions","koharu_ygg_tokens","koharu_player_renames","code_id_to_uuid","koharu_oauth_authorizations","koharu_oauth_consents","oauth_refresh_tokens","oauth_auth_codes","oauth_access_tokens","oauth_clients","scopes","uuid","players","users","options"))jdbc.update("DELETE FROM "+table);
         for(var user:List.of(owner,other))jdbc.update("INSERT INTO users(uid,email,nickname,password,permission,score,ip,register_at,last_sign_at,verified) VALUES(?,?,?,'unused',0,100,'127.0.0.1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,true)",user.uid(),user.email(),user.nickname());
         jdbc.update("INSERT INTO players(pid,uid,name,tid_skin,tid_cape,last_modified) VALUES(2901,2901,'OwnPlayer',0,0,CURRENT_TIMESTAMP),(2902,2902,'OtherPlayer',0,0,CURRENT_TIMESTAMP)");
         jdbc.update("INSERT INTO uuid(name,uuid) VALUES('OwnPlayer',?),('OtherPlayer',?)",ONE,OTHER);
@@ -126,7 +126,7 @@ class YggConnectTests {
             assertThat(List.of(a.get(),b.get())).containsExactlyInAnyOrder(302,403);
         }
     }
-    @Test void actualHttpLoginConsentAndSelectionSubmitRenderedCsrfForms() throws Exception {
+    @Test void actualHttpLoginConsentSelectionAndGameJoin() throws Exception {
         jdbc.update("UPDATE users SET password=? WHERE uid=?",new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(4).encode("test-password"),owner.uid());
         try(var http=java.net.http.HttpClient.newBuilder().cookieHandler(new CookieManager(null,CookiePolicy.ACCEPT_ALL)).build()) {
             String root="http://127.0.0.1:"+port;
@@ -136,7 +136,7 @@ class YggConnectTests {
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString("{\"identification\":\"connect2901@example.invalid\",\"password\":\"test-password\"}")).build(),java.net.http.HttpResponse.BodyHandlers.ofString());
             assertThat(json.readTree(login.body()).get("code").asInt()).isZero();
             String authorize=root+"/oauth/authorize?response_type=code&client_id="+client.id()+"&redirect_uri="+URLEncoder.encode(CALLBACK,StandardCharsets.UTF_8)
-                    +"&scope="+URLEncoder.encode("openid "+OAuthScopes.SELECT,StandardCharsets.UTF_8)+"&state=http-test";
+                    +"&scope="+URLEncoder.encode("openid "+OAuthScopes.SELECT+" "+OAuthScopes.JOIN,StandardCharsets.UTF_8)+"&state=http-test";
             var started=http.send(java.net.http.HttpRequest.newBuilder(URI.create(authorize)).GET().build(),java.net.http.HttpResponse.BodyHandlers.ofString());
             var consentUri=URI.create(started.headers().firstValue("location").orElseThrow());
             var consentPage=http.send(java.net.http.HttpRequest.newBuilder(URI.create(root+consentUri.getRawPath()+"?"+consentUri.getRawQuery())).GET().build(),java.net.http.HttpResponse.BodyHandlers.ofString());
@@ -150,6 +150,21 @@ class YggConnectTests {
             var selected=submit(http,root,selection,ONE); assertThat(selected.statusCode()).isEqualTo(302);
             String id=query(selected.headers().firstValue("location").orElseThrow(),"code");
             assertThat(jdbc.queryForObject("SELECT uuid FROM code_id_to_uuid WHERE code_id=?",String.class,id)).isEqualTo(ONE);
+            String form="grant_type=authorization_code&client_id="+client.id()+"&client_secret="+client.secret()+"&redirect_uri="+URLEncoder.encode(CALLBACK,StandardCharsets.UTF_8)
+                    +"&code="+URLEncoder.encode(query(callback.toString(),"code"),StandardCharsets.UTF_8);
+            var exchanged=http.send(java.net.http.HttpRequest.newBuilder(URI.create(root+"/oauth/token")).header("Content-Type","application/x-www-form-urlencoded")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(form)).build(),java.net.http.HttpResponse.BodyHandlers.ofString());
+            assertThat(exchanged.statusCode()).isEqualTo(200);
+            String access=json.readTree(exchanged.body()).get("access_token").asString();
+            var joined=http.send(java.net.http.HttpRequest.newBuilder(URI.create(root+"/api/yggdrasil/sessionserver/session/minecraft/join")).header("Content-Type","application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(json.writeValueAsString(Map.of("accessToken",access,"selectedProfile",ONE,"serverId","http-game-server"))))
+                    .build(),java.net.http.HttpResponse.BodyHandlers.ofString());
+            assertThat(joined.statusCode()).isEqualTo(204);
+            var confirmed=http.send(java.net.http.HttpRequest.newBuilder(URI.create(root+"/api/yggdrasil/sessionserver/session/minecraft/hasJoined?username=OwnPlayer&serverId=http-game-server"))
+                    .GET().build(),java.net.http.HttpResponse.BodyHandlers.ofString());
+            assertThat(confirmed.statusCode()).isEqualTo(200);var profile=json.readTree(confirmed.body());
+            assertThat(profile.get("id").asString()).isEqualTo(ONE);
+            assertThat(profile.get("properties").get(0).get("signature").asString()).isNotBlank();
         }
     }
     private java.net.http.HttpResponse<String> submit(java.net.http.HttpClient http,String root,org.jsoup.nodes.Element form,String uuid) throws Exception {
@@ -161,6 +176,42 @@ class YggConnectTests {
         if(uuid!=null) fields.add("selectedProfile="+uuid);
         return http.send(java.net.http.HttpRequest.newBuilder(URI.create(root+form.attr("action"))).header("Content-Type","application/x-www-form-urlencoded")
                 .POST(java.net.http.HttpRequest.BodyPublishers.ofString(String.join("&",fields))).build(),java.net.http.HttpResponse.BodyHandlers.ofString());
+    }
+
+    @Test void oauthGameTokenJoinsAndRefreshInvalidatesPreviouslyJoinedSession() throws Exception {
+        var grant=grant("openid "+OAuthScopes.SELECT+" "+OAuthScopes.JOIN);
+        select(grant,ONE,owner).andExpect(status().is3xxRedirection());
+        var token=body(exchange(grant.code()).andExpect(status().isOk()));String access=token.get("access_token").asString();
+        join(access,OTHER,"foreign").andExpect(status().isForbidden());join(access,ONE,"oauth-game").andExpect(status().isNoContent());
+        joined("oauth-game").andExpect(status().isOk()).andExpect(jsonPath("$.id").value(ONE));
+        mvc.perform(post("/api/yggdrasil/authserver/refresh").contentType("application/json").content(json.writeValueAsString(Map.of("accessToken",access))))
+                .andExpect(status().isForbidden());
+        var renewed=body(mvc.perform(post("/oauth/token").param("grant_type","refresh_token").param("client_id",""+client.id()).param("client_secret",client.secret())
+                .param("refresh_token",token.get("refresh_token").asString())).andExpect(status().isOk()));
+        joined("oauth-game").andExpect(status().isNoContent());join(access,ONE,"old-access").andExpect(status().isForbidden());
+        String current=renewed.get("access_token").asString();join(current,ONE,"renewed-game").andExpect(status().isNoContent());
+        joined("renewed-game").andExpect(status().isOk());
+        mvc.perform(post("/api/yggdrasil/authserver/invalidate").contentType("application/json").content(json.writeValueAsString(Map.of("accessToken",current))))
+                .andExpect(status().isNoContent());
+        joined("renewed-game").andExpect(status().isNoContent());join(current,ONE,"revoked").andExpect(status().isForbidden());
+        mvc.perform(post("/oauth/token").param("grant_type","refresh_token").param("client_id",""+client.id()).param("client_secret",client.secret())
+                .param("refresh_token",renewed.get("refresh_token").asString())).andExpect(status().isBadRequest());
+    }
+    @Test void readOnlyAuthorizationCannotJoinAndRevokingGrantCancelsPendingJoin() throws Exception {
+        var read=grant("openid "+OAuthScopes.READ);var readToken=body(exchange(read.code()).andExpect(status().isOk()));
+        join(readToken.get("access_token").asString(),ONE,"read-is-not-login").andExpect(status().isForbidden());
+        var game=grant("openid "+OAuthScopes.SELECT+" "+OAuthScopes.JOIN);select(game,ONE,owner).andExpect(status().is3xxRedirection());
+        String token=body(exchange(game.code()).andExpect(status().isOk())).get("access_token").asString();
+        join(token,ONE,"grant-revoked").andExpect(status().isNoContent());
+        mvc.perform(delete("/oauth/tokens/"+game.id()).with(user(owner)).with(csrf())).andExpect(status().isNoContent());
+        joined("grant-revoked").andExpect(status().isNoContent());
+    }
+    private ResultActions join(String token,String uuid,String server) throws Exception {
+        return mvc.perform(post("/api/yggdrasil/sessionserver/session/minecraft/join").contentType("application/json")
+                .content(json.writeValueAsString(Map.of("accessToken",token,"selectedProfile",uuid,"serverId",server))));
+    }
+    private ResultActions joined(String server) throws Exception {
+        return mvc.perform(get("/api/yggdrasil/sessionserver/session/minecraft/hasJoined").param("username","OwnPlayer").param("serverId",server));
     }
 
     private Grant grant(String scopes) throws Exception {
