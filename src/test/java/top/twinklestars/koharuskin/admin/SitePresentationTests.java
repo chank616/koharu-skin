@@ -116,17 +116,17 @@ class SitePresentationTests {
         }
         assertThatThrownBy(()->settings.save("customize","color",Map.of("navbar_color","unknown"))).isInstanceOf(top.twinklestars.koharuskin.account.BusinessException.class);
         assertThat(options.get("navbar_color")).isEqualTo("warning");
-        mvc.perform(post("/admin/resource").with(user(member)).with(csrf()).param("option","resources").param("cdn_address","https://cdn.example.invalid"))
+        mvc.perform(post("/admin/resource").with(user(member)).with(csrf()).param("option","resources").param("cache_expire_time","31536000").param("cdn_address","https://cdn.example.invalid"))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/resource").with(user(admin)).with(csrf()).param("option","resources").param("cdn_address"," https://cdn.example.invalid/assets/// "))
+        mvc.perform(post("/admin/resource").with(user(admin)).with(csrf()).param("option","resources").param("cache_expire_time","31536000").param("cdn_address"," https://cdn.example.invalid/assets/// "))
                 .andExpect(redirectedUrl("/admin/resource?saved"));
         assertThat(options.get("cdn_address")).isEqualTo("https://cdn.example.invalid/assets");
         var cdnPage=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
         for(String file:List.of("app.js","style.css","home.js","home.css")) assertThat(cdnPage).contains("https://cdn.example.invalid/assets/app/"+file);
         assertThat(cdnPage).contains("id=\"cdn-host\"");
         for(String invalid:List.of("//cdn.example.invalid","javascript:alert(1)","https://user:secret@cdn.example.invalid","https://cdn.example.invalid?a=1"))
-            assertThatThrownBy(()->settings.save("resource","resources",Map.of("cdn_address",invalid))).isInstanceOf(top.twinklestars.koharuskin.account.BusinessException.class);
-        settings.save("resource","resources",Map.of("cdn_address",""));
+            assertThatThrownBy(()->settings.save("resource","resources",Map.of("cdn_address",invalid,"cache_expire_time","31536000"))).isInstanceOf(top.twinklestars.koharuskin.account.BusinessException.class);
+        settings.save("resource","resources",Map.of("cdn_address","","cache_expire_time","31536000"));
         var localPage=mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
         assertThat(localPage).contains("src=\"/app/app.js\"","href=\"/app/style.css\"").doesNotContain("id=\"cdn-host\"","cdn.example.invalid");
     }

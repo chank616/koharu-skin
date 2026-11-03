@@ -32,8 +32,12 @@ public class AdminSettings {
                     new Group("customJsCss","自定义样式与脚本",List.of(
                             new Field("custom_css","CSS（直接填写代码，不含 style 标签）","textarea",""),
                             new Field("custom_js","JavaScript（直接填写代码，不含 script 标签）","textarea",""))));
-            case "resource" -> List.of(new Group("resources","静态资源 CDN",List.of(
-                    new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))));
+            case "resource" -> List.of(new Group("resources","资源访问",List.of(
+                    new Field("cache_expire_time","材质文件和 CustomSkinLoader 角色信息缓存时长（秒）","number","31536000"),
+                    new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))),
+                    new Group("cache","图片渲染缓存",List.of(
+                            new Field("enable_avatar_cache","缓存头像渲染结果","checkbox","false"),
+                            new Field("enable_preview_cache","缓存预览图渲染结果","checkbox","false"))));
             case "extensions" -> List.of(
                     new Group("ygg-connect","OIDC 角色授权",List.of(new Field("ygg_connect_server_url","OIDC 服务根地址（留空表示未配置）","text",""),
                             new Field("ygg_disable_authserver","关闭传统 authserver 接口，使用 OIDC 授权登录（进服验证不受影响）","checkbox","false"))),

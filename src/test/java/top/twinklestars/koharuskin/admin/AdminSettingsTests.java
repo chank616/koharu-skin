@@ -124,6 +124,22 @@ class AdminSettingsTests {
         assertThat(options.enabled("ygg_restore_api",true)).isFalse();
     }
 
+    @Test void resourceCacheSettingsCanBeSavedAndDisabled() throws Exception {
+        var values=settings.values("resource");
+        values.put("cache_expire_time","3600");
+        save("resource","resources",values).andExpect(redirectedUrl("/admin/resource?saved"));
+        assertThat(options.number("cache_expire_time",0)).isEqualTo(3600);
+        values.put("enable_avatar_cache","true");values.put("enable_preview_cache","true");
+        save("resource","cache",values).andExpect(status().is3xxRedirection());
+        assertThat(options.enabled("enable_avatar_cache",false)).isTrue();
+        assertThat(options.enabled("enable_preview_cache",false)).isTrue();
+        save("resource","cache",Map.of()).andExpect(status().is3xxRedirection());
+        assertThat(options.enabled("enable_avatar_cache",true)).isFalse();
+        assertThat(options.enabled("enable_preview_cache",true)).isFalse();
+        mvc.perform(get("/admin/resource").with(user(admin))).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/admin/resource/clear-cache")));
+    }
+
     private ResultActions save(String page,String group,Map<String,String> values) throws Exception {
         var request=post("/admin/"+page).with(user(admin)).with(csrf()).param("option",group);
         values.forEach(request::param);

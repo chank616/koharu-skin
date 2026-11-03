@@ -41,10 +41,12 @@ class TextureTests {
     @Autowired PlayerMapper users;
     @Autowired JdbcTemplate jdbc;
     @Autowired MockMvc mvc;
+    @Autowired TextureRenders renders;
     private final AccountUser owner = new AccountUser(1,"owner@example.invalid","Owner","unused",0);
     private final AccountUser other = new AccountUser(2,"other@example.invalid","Other","unused",0);
 
     @BeforeEach void fixture() {
+        renders.clear();
         for (String table : new String[]{"user_closet","textures","uuid","players","users","options"}) jdbc.update("DELETE FROM " + table);
         jdbc.update("INSERT INTO options(option_name,option_value) VALUES('register_with_player_name','true'),('score_per_closet_item','2'),('score_per_storage','1'),('private_score_per_storage','10')");
         jdbc.update("INSERT INTO users(uid,email,nickname,password,score,ip,register_at,last_sign_at,verified) VALUES(1,'owner@example.invalid','Owner','unused',10000,'127.0.0.1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,true),(2,'other@example.invalid','Other','unused',10000,'127.0.0.2',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,true)");
@@ -174,6 +176,51 @@ class TextureTests {
         Files.delete(storage.resolve(textures.find(tid).hash()));
         mvc.perform(get("/avatar/user/1")).andExpect(status().isOk()).andExpect(content().bytes(fallback));
     }
+    @Test void renderCacheTracksModelSizeAndMissingFiles() throws Exception {
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('enable_preview_cache','true'),('enable_avatar_cache','true')");
+        int tid=tid(service.upload(owner,"Cached","steve",true,png(64,64)));
+        var texture=textures.find(tid);
+        var preview=renders.preview(texture,128);
+        assertThat(renders.preview(texture,128)).isSameAs(preview);
+        assertThat(renders.preview(texture,256)).isNotSameAs(preview);
+        service.type(owner,tid,"alex");
+        assertThat(renders.preview(textures.find(tid),128)).isNotSameAs(preview);
+        var avatar=renders.avatar(texture,64,false);
+        assertThat(renders.avatar(texture,64,false)).isSameAs(avatar);
+        assertThat(renders.avatar(texture,64,true)).isNotSameAs(avatar);
+        jdbc.update("UPDATE options SET option_value='false' WHERE option_name='enable_preview_cache'");
+        assertThat(renders.preview(texture,128)).isNotSameAs(preview);
+        Files.delete(storage.resolve(texture.hash()));
+        mvc.perform(get("/preview/"+tid)).andExpect(status().isNotFound());
+        assertThat(renders.avatar(texture,64,false).bytes()).isEqualTo(renders.avatar(null,64,false).bytes());
+    }
+
+    @Test void avatarRevalidatesAfterChangingPlayerSkinAndClearKeepsUploads() throws Exception {
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('enable_avatar_cache','true')");
+        int tid=tid(service.upload(owner,"Cached","steve",true,png(64,64)));
+        var player=players.add(1,"CachedPlayer",false);
+        String url="/avatar/player/"+player.name();
+        var previous=mvc.perform(get(url)).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control","no-cache")).andReturn().getResponse();
+        mvc.perform(get(url).header("If-None-Match",previous.getHeader("ETag"))).andExpect(status().isNotModified());
+        players.setTextures(1,player.pid(),tid,null);
+        var changed=mvc.perform(get(url).header("If-None-Match",previous.getHeader("ETag"))).andExpect(status().isOk()).andReturn().getResponse();
+        assertThat(changed.getHeader("ETag")).isNotEqualTo(previous.getHeader("ETag"));
+        mvc.perform(head(url)).andExpect(status().isOk()).andExpect(header().string("ETag",changed.getHeader("ETag")));
+        var texture=textures.find(tid);
+        var cached=renders.avatar(texture,64,false);
+        var admin=new AccountUser(1,"owner@example.invalid","Owner","unused",2);
+        mvc.perform(post("/admin/resource/clear-cache").with(user(owner)).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/resource/clear-cache").with(user(admin))).andExpect(status().isForbidden());
+        jdbc.update("UPDATE users SET permission=2 WHERE uid=1");
+        mvc.perform(post("/admin/resource/clear-cache").with(user(admin)).with(csrf()))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/admin/resource")).andExpect(flash().attribute("cacheCleared",true));
+        var regenerated=renders.avatar(texture,64,false);
+        assertThat(regenerated).isNotSameAs(cached);
+        assertThat(regenerated.bytes()).isEqualTo(cached.bytes());
+        assertThat(Files.isRegularFile(storage.resolve(texture.hash()))).isTrue();
+    }
+
     private MockMultipartFile png(int width,int height) throws Exception {
         var image = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
         for(int y=0;y<height;y++) for(int x=0;x<width;x++) image.setRGB(x,y,0xff004488 | ((x * 3) << 16));

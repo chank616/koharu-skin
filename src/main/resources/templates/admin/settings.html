@@ -16,6 +16,7 @@
         <h1 class="h3 mb-3" th:text="${title}"></h1>
         <p th:if="${section=='extensions/config'}"><a th:href="@{/admin/yggdrasil-log}">查看外置登录日志</a></p>
         <div class="alert alert-success" role="status" th:if="${param.saved != null}">设置已保存</div>
+        <div class="alert alert-success" role="status" th:if="${cacheCleared}">头像和预览图缓存已清理</div>
         <div class="alert alert-danger" role="alert" th:if="${error != null}" th:text="${error}"></div>
         <form class="card" method="post" th:action="@{'/admin/'+${section}}" th:each="group : ${groups}" th:id="${group.key}">
             <input type="hidden" name="option" th:value="${group.key}">
@@ -45,6 +46,10 @@
                     <input th:case="*" class="form-control" th:type="${field.type=='integer'?'number':field.type}" th:id="${field.key}" th:name="${field.key}" th:value="${values[field.key]}" th:min="${field.type=='number'?0:null}" th:autocomplete="${field.type=='password'?'new-password':null}">
                 </div>
             </div><div class="card-footer"><button class="btn btn-primary" type="submit">保存设置</button></div>
+        </form>
+        <form th:if="${section=='resource'}" method="post" th:action="@{/admin/resource/clear-cache}" class="mb-3">
+            <p>头像和预览图共用最多 32 MiB 的图片数据缓存，应用重启后会重新生成。清理缓存不会删除上传的材质。</p>
+            <button class="btn btn-warning">清理头像和预览图缓存</button>
         </form>
         <div class="card" th:if="${section=='extensions/config'}">
             <div class="card-header"><h2 class="card-title">联盟成员操作</h2></div>

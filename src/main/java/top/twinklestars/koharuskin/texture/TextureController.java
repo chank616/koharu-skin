@@ -12,11 +12,8 @@ import top.twinklestars.koharuskin.site.SiteOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.io.ByteArrayOutputStream;
-import javax.imageio.ImageIO;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import top.twinklestars.koharuskin.account.AccountUser;
 
@@ -25,10 +22,12 @@ public class TextureController {
     private final TextureMapper textures;
     private final SiteOptions options;
     private final Path directory;
-    public TextureController(TextureMapper textures, SiteOptions options, @Value("${koharu.textures:storage/textures}") String directory) {
+    private final TextureRenders renders;
+    public TextureController(TextureMapper textures, SiteOptions options, @Value("${koharu.textures:storage/textures}") String directory,TextureRenders renders) {
         this.textures = textures;
         this.options = options;
         this.directory = Path.of(directory);
+        this.renders=renders;
     }
 
     @GetMapping({"/skinlib/info/{tid}", "/texture/{tid}"})
@@ -81,43 +80,32 @@ public class TextureController {
     }
 
     @GetMapping(value = "/preview/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
-    public byte[] preview(@PathVariable int tid, @RequestParam(defaultValue = "200") @Min(16) @Max(1024) int height) throws IOException {
-        Texture texture = find(tid);
-        if(!Files.isRegularFile(directory.resolve(texture.hash()))) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"材质文件不存在");
-        var skin = ImageIO.read(directory.resolve(texture.hash()).toFile());
-        return png(SkinImages.preview(skin, texture.type(), height));
+    public ResponseEntity<byte[]> preview(@PathVariable int tid, @RequestParam(defaultValue = "200") @Min(16) @Max(1024) int height) throws IOException {
+        return image(renders.preview(find(tid),height));
     }
 
     @GetMapping(value="/preview/hash/{hash}",produces=MediaType.IMAGE_PNG_VALUE)
-    public byte[] previewHash(@PathVariable String hash,@RequestParam(defaultValue="200") @Min(16) @Max(1024) int height) throws IOException {
+    public ResponseEntity<byte[]> previewHash(@PathVariable String hash,@RequestParam(defaultValue="200") @Min(16) @Max(1024) int height) throws IOException {
         Integer tid=textures.idByHash(hash);
         if(tid==null) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"材质不存在");
         return preview(tid,height);
     }
 
     @GetMapping(value = "/avatar/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
-    public byte[] avatar(@PathVariable int tid, @RequestParam(defaultValue = "100") @Min(8) @Max(512) int size,
+    public ResponseEntity<byte[]> avatar(@PathVariable int tid, @RequestParam(defaultValue = "100") @Min(8) @Max(512) int size,
                          @RequestParam java.util.Map<String, String> query) throws IOException {
-        Texture texture = textures.find(tid);
-        java.awt.image.BufferedImage skin;
-        if (texture == null || !Files.isRegularFile(directory.resolve(texture.hash()))) {
-            try (var stream = new ClassPathResource("static/defaults/steve.png").getInputStream()) { skin = ImageIO.read(stream); }
-        } else {
-            if (texture.type().equals("cape")) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
-            skin = ImageIO.read(directory.resolve(texture.hash()).toFile());
-        }
-        return png(SkinImages.avatar(skin, size, query.containsKey("3d")));
+        return image(renders.avatar(textures.find(tid),size,query.containsKey("3d")));
     }
 
     @GetMapping(value="/avatar/user/{uid}", produces=MediaType.IMAGE_PNG_VALUE)
-    public byte[] userAvatar(@PathVariable long uid, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
+    public ResponseEntity<byte[]> userAvatar(@PathVariable long uid, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
                              @RequestParam java.util.Map<String,String> query) throws IOException {
         Integer tid=textures.avatarId(uid);
         return avatar(tid==null?0:tid,size,query);
     }
 
     @GetMapping(value="/avatar/player/{name}", produces=MediaType.IMAGE_PNG_VALUE)
-    public byte[] playerAvatar(@PathVariable String name, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
+    public ResponseEntity<byte[]> playerAvatar(@PathVariable String name, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
                                @RequestParam java.util.Map<String,String> query) throws IOException {
         Integer tid=textures.playerSkin(name);
         if (tid==null) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"角色不存在");
@@ -125,15 +113,15 @@ public class TextureController {
     }
 
     @GetMapping(value="/avatar/hash/{hash}", produces=MediaType.IMAGE_PNG_VALUE)
-    public byte[] hashAvatar(@PathVariable String hash, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
+    public ResponseEntity<byte[]> hashAvatar(@PathVariable String hash, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
                              @RequestParam java.util.Map<String,String> query) throws IOException {
         Integer tid=textures.idByHash(hash);
         return avatar(tid==null?0:tid,size,query);
     }
 
-    private byte[] png(java.awt.image.BufferedImage image) throws IOException {
-        var output = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", output);
-        return output.toByteArray();
+    private ResponseEntity<byte[]> image(TextureRenders.Image image) {
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).contentLength(image.bytes().length)
+                .cacheControl(org.springframework.http.CacheControl.noCache())
+                .eTag(image.etag()).body(image.bytes());
     }
 }
