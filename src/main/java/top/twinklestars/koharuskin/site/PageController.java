@@ -76,6 +76,13 @@ public class PageController {
         return "admin/management";
     }
 
+    @GetMapping("/admin/players")
+    public String adminPlayers(Model model) {
+        page(model,"admin/players",Map.of());
+        model.addAttribute("title","角色管理");
+        return "admin/management";
+    }
+
     @GetMapping("/auth/register")
     public String register(Model model, @AuthenticationPrincipal AccountUser user) {
         if (user != null) return "redirect:/user";
