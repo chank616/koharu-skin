@@ -33,8 +33,8 @@ class AccountLoginTests {
         jdbc.update("DELETE FROM users");
         attempts.clear("127.0.0.1");
         var encoder = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y, 4);
-        jdbc.update("INSERT INTO users (uid,email,nickname,password,permission) VALUES (1, 'tester@example.invalid', '测试用户', ?, 0)", encoder.encode("test-password"));
-        jdbc.update("INSERT INTO players (pid,uid,name) VALUES (1, 1, 'TestPlayer')");
+        jdbc.update("INSERT INTO users (uid,email,nickname,password,permission,score,ip,register_at,last_sign_at) VALUES (1, 'tester@example.invalid', '测试用户', ?, 0,1000,'127.0.0.1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)", encoder.encode("test-password"));
+        jdbc.update("INSERT INTO players (pid,uid,name,last_modified) VALUES (1, 1, 'TestPlayer',CURRENT_TIMESTAMP)");
     }
 
     @Test

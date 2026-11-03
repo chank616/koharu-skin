@@ -54,8 +54,10 @@ public class PageController {
 
     @GetMapping("/user")
     public String user(Model model, @AuthenticationPrincipal AccountUser user) {
-        page(model, "account-overview", Map.of());
+        page(model, "user", Map.of());
         model.addAttribute("account", Map.of("uid", user.uid(), "nickname", user.nickname(), "email", user.email()));
+        model.addAttribute("rates", Map.of("角色", options.number("score_per_player", 100), "公开材质 / KB", options.number("score_per_storage", 1),
+                "私密材质 / KB", options.number("private_score_per_storage", 10), "衣柜收藏", options.number("score_per_closet_item", 0)));
         return "user/index";
     }
 
@@ -73,5 +75,13 @@ public class PageController {
                 "cost", options.number("score_per_player", 100), "rule", "命名规则：" + options.text("player_name_rule", "official"),
                 "length", "长度：" + options.number("player_name_length_min", 3) + "～" + options.number("player_name_length_max", 16)));
         return "user/players";
+    }
+
+    @GetMapping("/user/closet")
+    public String closet(Model model, @AuthenticationPrincipal AccountUser user) {
+        page(model, "user/closet", Map.of("unverified", options.enabled("require_verification", false) && !players.verified(user.uid()),
+                "rule", "命名规则：" + options.text("player_name_rule", "official"),
+                "length", "长度：" + options.number("player_name_length_min", 3) + "～" + options.number("player_name_length_max", 16)));
+        return "user/closet";
     }
 }

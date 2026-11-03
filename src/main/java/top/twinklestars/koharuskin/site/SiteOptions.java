@@ -13,7 +13,10 @@ public interface SiteOptions {
         return value == null ? fallback : value;
     }
 
-    default int number(String name, int fallback) { return Integer.parseInt(text(name, "" + fallback)); }
+    default int number(String name, int fallback) {
+        String value = text(name, "" + fallback);
+        return switch (value) { case "true" -> 1; case "false" -> 0; default -> Integer.parseInt(value); };
+    }
 
     default boolean enabled(String name, boolean fallback) { return Boolean.parseBoolean(text(name, "" + fallback)); }
 

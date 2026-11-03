@@ -7,6 +7,7 @@
         <div class="container">
             <a class="navbar-brand" th:href="@{/user}" th:text="${siteName}">Koharu Skin</a>
             <a class="nav-link" th:href="@{/user/player}">角色管理</a>
+            <a class="nav-link" th:href="@{/user/closet}">我的衣柜</a>
             <button id="logout-button" type="button" class="btn btn-outline-secondary ml-auto">退出登录</button>
         </div>
     </nav>
@@ -16,8 +17,18 @@
             <p th:text="${account.email}"></p>
             <span>用户 ID：</span><span th:text="${account.uid}"></span>
         </div></div>
+        <div id="usage-box"></div>
     </div></section></div>
 </div>
 <th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+<div id="modal-score-instruction" class="modal fade" tabindex="-1" role="dialog" aria-label="积分说明">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">积分说明</h5><button class="close" data-dismiss="modal" aria-label="关闭">×</button></div>
+        <div class="modal-body"><p>通过签到获得积分，用于添加角色、上传材质和收藏。各项消耗由站点设置决定。</p>
+            <p th:each="rate : ${rates}"><span th:text="${rate.key}"></span>：<span th:text="${rate.value}"></span> 积分</p>
+        </div>
+        <div class="modal-footer"><button class="btn btn-default" data-dismiss="modal">关闭</button></div>
+    </div></div>
+</div>
 </body>
 </html>

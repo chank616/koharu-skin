@@ -12,6 +12,11 @@ import top.twinklestars.koharuskin.site.SiteOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import org.springframework.core.io.ClassPathResource;
 
 @RestController
 public class TextureController {
@@ -44,5 +49,32 @@ public class TextureController {
     public ResponseEntity<Resource> raw(@PathVariable int tid) throws IOException {
         if (!options.enabled("allow_downloading_texture", true)) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return file(info(tid).hash());
+    }
+
+    @GetMapping(value = "/preview/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
+    public byte[] preview(@PathVariable int tid, @RequestParam(defaultValue = "200") @Min(16) @Max(1024) int height) throws IOException {
+        Texture texture = info(tid);
+        var skin = ImageIO.read(directory.resolve(texture.hash()).toFile());
+        return png(SkinImages.preview(skin, texture.type(), height));
+    }
+
+    @GetMapping(value = "/avatar/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
+    public byte[] avatar(@PathVariable int tid, @RequestParam(defaultValue = "100") @Min(8) @Max(512) int size,
+                         @RequestParam java.util.Map<String, String> query) throws IOException {
+        Texture texture = textures.find(tid);
+        java.awt.image.BufferedImage skin;
+        if (texture == null || !Files.isRegularFile(directory.resolve(texture.hash()))) {
+            try (var stream = new ClassPathResource("static/defaults/steve.png").getInputStream()) { skin = ImageIO.read(stream); }
+        } else {
+            if (texture.type().equals("cape")) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+            skin = ImageIO.read(directory.resolve(texture.hash()).toFile());
+        }
+        return png(SkinImages.avatar(skin, size, query.containsKey("3d")));
+    }
+
+    private byte[] png(java.awt.image.BufferedImage image) throws IOException {
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", output);
+        return output.toByteArray();
     }
 }

@@ -30,7 +30,7 @@ class PlayerTests {
     void fixture() {
         for (String table : new String[]{"user_closet", "textures", "uuid", "players", "users", "options"}) jdbc.update("DELETE FROM " + table);
         jdbc.update("INSERT INTO options(option_name,option_value) VALUES('register_with_player_name','true'),('ygg_uuid_algorithm','v3')");
-        jdbc.update("INSERT INTO users(uid,email,nickname,password,score,verified) VALUES(1,'owner@example.invalid','Owner','unused',1000,true),(2,'other@example.invalid','Other','unused',1000,false)");
+        jdbc.update("INSERT INTO users(uid,email,nickname,password,score,verified,ip,register_at,last_sign_at) VALUES(1,'owner@example.invalid','Owner','unused',1000,true,'127.0.0.1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),(2,'other@example.invalid','Other','unused',1000,false,'127.0.0.2',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
     }
 
     @Test
@@ -75,7 +75,7 @@ class PlayerTests {
     void validatesClosetOwnershipAndTypeBeforeApplyingEitherTexture() {
         Player player = service.add(1, "SkinPlayer", false);
         String hash = "a".repeat(64);
-        jdbc.update("INSERT INTO textures(tid,name,type,hash,size,uploader,public) VALUES(1,'Skin','alex',?,1,1,true),(2,'Cape','cape',?,1,2,true)",hash,hash);
+        jdbc.update("INSERT INTO textures(tid,name,type,hash,size,uploader,public,upload_at) VALUES(1,'Skin','alex',?,1,1,true,CURRENT_TIMESTAMP),(2,'Cape','cape',?,1,2,true,CURRENT_TIMESTAMP)",hash,hash);
         jdbc.update("INSERT INTO user_closet(user_uid,texture_tid) VALUES(1,1)");
         assertThatThrownBy(() -> service.setTextures(1, player.pid(), 1, 2)).isInstanceOf(BusinessException.class);
         assertThat(players.find(player.pid()).tidSkin()).isZero();

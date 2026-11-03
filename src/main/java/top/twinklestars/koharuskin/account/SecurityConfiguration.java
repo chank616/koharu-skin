@@ -55,7 +55,7 @@ public class SecurityConfiguration {
                                             @Value("${koharu.remember-key}") String key) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/auth/**", "/app/**", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/*", "/avatar/*").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
                 .securityContext(context -> context.securityContextRepository(contexts))

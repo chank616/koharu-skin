@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
       toast.error(message)
     }
     setLoading(false)
-  }, [])
+  }, [lastSign, signGap, canSignAfterZero, setTweenedScore])
 
   return (
     <div className="card card-primary card-outline">
