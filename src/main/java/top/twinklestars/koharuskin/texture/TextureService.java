@@ -61,6 +61,16 @@ public class TextureService {
 
     @Transactional(rollbackFor = IOException.class)
     public Map<String, Object> upload(AccountUser user, String name, String type, boolean visible, MultipartFile file) throws IOException {
+        return upload(user,name,type,visible,file,false);
+    }
+
+    @Transactional(rollbackFor = IOException.class)
+    public int uploadPrivate(AccountUser user, String name, String type, MultipartFile file) throws IOException {
+        var result=upload(user,name,type,false,file,true);
+        return ((Number)((Map<?,?>)result.get("data")).get("tid")).intValue();
+    }
+
+    private Map<String,Object> upload(AccountUser user,String name,String type,boolean visible,MultipartFile file,boolean ownOnly) throws IOException {
         players.requireVerified(user.uid());
         validateName(name);
         if (file.isEmpty() || file.getSize() > options.number("max_upload_file_size", 1024) * 1024L) throw new BusinessException("文件为空或超过站点大小限制");
@@ -83,8 +93,8 @@ public class TextureService {
         }
         String hash = hash(sanitized);
         options.lockRegistration();
-        Texture duplicate = textures.duplicate(hash(original), user.uid());
-        if (duplicate == null) duplicate = textures.duplicate(hash, user.uid());
+        Texture duplicate = ownOnly?textures.ownedDuplicate(hash(original),user.uid(),type):textures.duplicate(hash(original), user.uid());
+        if (duplicate == null) duplicate = ownOnly?textures.ownedDuplicate(hash,user.uid(),type):textures.duplicate(hash, user.uid());
         if (duplicate != null) return duplicate(duplicate.tid());
         int size = (sanitized.length + 1023) / 1024;
         int cost = size * options.number(visible ? "score_per_storage" : "private_score_per_storage", visible ? 1 : 10)

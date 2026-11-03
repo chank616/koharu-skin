@@ -36,6 +36,8 @@ public class PageController {
     private final AccountMailService mail;
     private final ProfileMapper profiles;
     private final OfficialExtensions extensions;
+    @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
+    private String publicUrl;
 
     public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
                           TextureService textures, AccountMapper accounts, AccountMailService mail,
@@ -76,7 +78,10 @@ public class PageController {
     }
 
     @GetMapping("/")
-    public String home() { return "redirect:/user"; }
+    public String home(jakarta.servlet.http.HttpServletResponse response) {
+        if (extensions.enabled("yggdrasil-api")) response.setHeader("X-Authlib-Injector-API-Location",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
+        return "redirect:/user";
+    }
 
     @GetMapping("/auth/login")
     public String login(Model model, HttpServletRequest request, @AuthenticationPrincipal AccountUser user) {
@@ -88,6 +93,9 @@ public class PageController {
 
     @GetMapping("/user")
     public String user(Model model, @AuthenticationPrincipal AccountUser user) {
+        if (extensions.enabled("yggdrasil-api") && options.enabled("ygg_show_config_section",true)) {
+            model.addAttribute("yggUrl",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
+        }
         page(model, "user", Map.of("unverified", options.enabled("require_verification", false) && !accounts.verified(user.uid())));
         model.addAttribute("account", Map.of("uid", user.uid(), "nickname", user.nickname(), "email", user.email()));
         model.addAttribute("rates", Map.of("角色", options.number("score_per_player", 100), "公开材质 / KB", options.number("score_per_storage", 1),

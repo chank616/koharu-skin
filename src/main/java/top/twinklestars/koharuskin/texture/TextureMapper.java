@@ -10,6 +10,8 @@ public interface TextureMapper {
     Texture find(int tid);
     @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE hash=#{hash} AND (public=true OR uploader=#{uid}) ORDER BY tid LIMIT 1")
     Texture duplicate(String hash, long uid);
+    @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE hash=#{hash} AND uploader=#{uid} AND type=#{type} ORDER BY tid LIMIT 1")
+    Texture ownedDuplicate(String hash, long uid, String type);
     @Insert("INSERT INTO textures(name,type,hash,size,uploader,public,upload_at,likes) VALUES(#{name},#{type},#{hash},#{size},#{uploader},#{visible},CURRENT_TIMESTAMP,1)")
     @Options(useGeneratedKeys = true, keyProperty = "tid")
     void insert(Map<String, Object> row);

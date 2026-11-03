@@ -5,6 +5,10 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface SiteOptions {
+    @org.apache.ibatis.annotations.Insert("INSERT INTO options(option_name,option_value) VALUES(#{name},#{value})")
+    void insert(String name, String value);
+    @org.apache.ibatis.annotations.Update("UPDATE options SET option_value=#{value} WHERE option_name=#{name}")
+    void update(String name, String value);
     @Select("SELECT option_value FROM options WHERE option_name = #{name} LIMIT 1")
     String get(String name);
 
