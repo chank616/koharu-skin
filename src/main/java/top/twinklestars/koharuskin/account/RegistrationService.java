@@ -15,15 +15,18 @@ public class RegistrationService {
     private final PlayerNames names;
     private final OfficialExtensions extensions;
     private final PasswordEncoder passwords;
+    private final top.twinklestars.koharuskin.player.PlayerService players;
 
     public RegistrationService(RegistrationMapper registrations, AccountMapper accounts, SiteOptions options,
-                               PlayerNames names, OfficialExtensions extensions, PasswordEncoder passwords) {
+                               PlayerNames names, OfficialExtensions extensions, PasswordEncoder passwords,
+                               top.twinklestars.koharuskin.player.PlayerService players) {
         this.registrations = registrations;
         this.accounts = accounts;
         this.options = options;
         this.names = names;
         this.extensions = extensions;
         this.passwords = passwords;
+        this.players = players;
     }
 
     @Transactional
@@ -43,7 +46,10 @@ public class RegistrationService {
         registrations.create(email, name, passwords.encode(password), options.number("user_initial_score", 1000), ip,
                 java.time.LocalDateTime.now().minusDays(1));
         AccountUser user = accounts.findByEmail(email);
-        if (withPlayer) registrations.createPlayer(user.uid(), name);
+        if (withPlayer) {
+            registrations.createPlayer(user.uid(), name);
+            players.syncUnion("POST",name);
+        }
         return user;
     }
 }

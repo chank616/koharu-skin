@@ -17,11 +17,14 @@ public class AdminUsersService {
     private final AdminUsersMapper users;
     private final SiteOptions options;
     private final PasswordEncoder passwords;
+    private final top.twinklestars.koharuskin.player.PlayerService players;
 
     public AdminUsersService(AccountMapper accounts, ProfileMapper profiles, AdminUsersMapper users,
-                             SiteOptions options, PasswordEncoder passwords) {
+                             SiteOptions options, PasswordEncoder passwords,
+                             top.twinklestars.koharuskin.player.PlayerService players) {
         this.accounts=accounts; this.profiles=profiles; this.users=users;
         this.options=options; this.passwords=passwords;
+        this.players=players;
     }
 
     private AccountUser authorize(long actorUid, long targetUid) {
@@ -64,7 +67,7 @@ public class AdminUsersService {
     }
     public void delete(long actor, long uid) {
         authorize(actor,uid);
-        profiles.deletePlayers(uid);
+        players.deleteAll(uid);
         profiles.delete(uid);
     }
 }

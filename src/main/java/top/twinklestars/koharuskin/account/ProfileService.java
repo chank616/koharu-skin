@@ -13,11 +13,14 @@ public class ProfileService {
     private final PasswordEncoder passwords;
     private final OfficialExtensions extensions;
     private final SiteOptions options;
+    private final top.twinklestars.koharuskin.player.PlayerService players;
 
     public ProfileService(AccountMapper accounts, ProfileMapper profiles, PasswordEncoder passwords,
-                          OfficialExtensions extensions, SiteOptions options) {
+                          OfficialExtensions extensions, SiteOptions options,
+                          top.twinklestars.koharuskin.player.PlayerService players) {
         this.accounts=accounts; this.profiles=profiles; this.passwords=passwords;
         this.extensions=extensions; this.options=options;
+        this.players=players;
     }
 
     @Transactional
@@ -58,7 +61,7 @@ public class ProfileService {
         if (user.permission() >= 1) throw new BusinessException("拥有管理员权限的账号不能被删除");
         checkPassword(user, password);
         // 与原站一致：注销删除角色，保留已上传的材质和角色 UUID。
-        profiles.deletePlayers(uid);
+        players.deleteAll(uid);
         profiles.delete(uid);
     }
 

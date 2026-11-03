@@ -47,6 +47,7 @@ public class AdminPlayersService {
         authorize(actor,pid);
         checkOwner(actor,uid);
         admin.owner(pid,uid);
+        service.syncUnion("PUT",players.find(pid).name());
     }
     public void texture(long actor, long pid, String type, int tid) {
         var player=authorize(actor,pid);
@@ -56,10 +57,12 @@ public class AdminPlayersService {
             if (type.equals("cape")!=textureType.equals("cape")) throw new BusinessException("皮肤和披风的材质类型不匹配");
         }
         players.textures(pid,type.equals("skin")?tid:player.tidSkin(),type.equals("cape")?tid:player.tidCape());
+        service.syncUnion("PUT",player.name());
     }
     public void delete(long actor, long pid) {
-        authorize(actor,pid);
+        var player=authorize(actor,pid);
         // 原后台允许管理员移除角色，不走用户端的单角色限制或积分退款。
         players.delete(pid);
+        service.syncUnion("DELETE",player.name());
     }
 }

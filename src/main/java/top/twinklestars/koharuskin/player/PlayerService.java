@@ -16,12 +16,15 @@ public class PlayerService {
     private final PlayerNames names;
     private final SiteOptions options;
     private final OfficialExtensions extensions;
+    private final top.twinklestars.koharuskin.yggdrasil.UnionPlayerSync union;
 
-    public PlayerService(PlayerMapper players, PlayerNames names, SiteOptions options, OfficialExtensions extensions) {
+    public PlayerService(PlayerMapper players, PlayerNames names, SiteOptions options, OfficialExtensions extensions,
+                         top.twinklestars.koharuskin.yggdrasil.UnionPlayerSync union) {
         this.players = players;
         this.names = names;
         this.options = options;
         this.extensions = extensions;
+        this.union = union;
     }
 
     public void requireVerified(long uid) {
@@ -47,7 +50,7 @@ public class PlayerService {
         var existing = players.findByName(name);
         if (bind && existing != null && existing.uid() == uid) {
             if (players.countName(name) > 1) throw new BusinessException("旧角色名存在重复，请先由管理员处理");
-            players.deleteOtherPlayers(uid, existing.pid());
+            deleteOthers(uid, existing.pid());
             players.nickname(uid, existing.name());
             uuid(existing.name());
             return existing;
@@ -60,9 +63,10 @@ public class PlayerService {
         players.changeScore(uid, -cost);
         if (bind) {
             players.nickname(uid, name);
-            players.deleteOtherPlayers(uid, players.findByName(name).pid());
+            deleteOthers(uid, players.findByName(name).pid());
         }
         uuid(name);
+        syncUnion("POST",name);
         return players.findByName(name);
     }
 
@@ -79,6 +83,7 @@ public class PlayerService {
         if (!player.name().equalsIgnoreCase(name)) players.deleteUuid(name);
         players.renameUuid(player.name(), name);
         players.rename(pid, name);
+        syncUnion("PUT",name);
         if (extensions.enabled("single-player-limit")) players.nickname(uid, name);
         return players.find(pid);
     }
@@ -86,10 +91,11 @@ public class PlayerService {
     @Transactional
     public void delete(long uid, long pid) {
         options.lockRegistration();
-        owned(uid, pid);
+        var player=owned(uid, pid);
         if (extensions.enabled("single-player-limit")) throw new BusinessException("本站启用了单角色限制，不能删除角色");
         players.lockScore(uid);
         players.delete(pid);
+        syncUnion("DELETE",player.name());
         if (options.enabled("return_score", true)) players.changeScore(uid, options.number("score_per_player", 100));
     }
 
@@ -100,7 +106,27 @@ public class PlayerService {
         if (skin != null && skin > 0) checkTexture(uid, skin, false);
         if (cape != null && cape > 0) checkTexture(uid, cape, true);
         players.textures(pid, skin == null ? player.tidSkin() : skin, cape == null ? player.tidCape() : cape);
+        syncUnion("PUT",player.name());
         return players.find(pid);
+    }
+
+    private void deleteOthers(long uid,long keepPid) {
+        for(var player:players.list(uid)) if(player.pid()!=keepPid) syncUnion("DELETE",player.name());
+        players.deleteOtherPlayers(uid,keepPid);
+    }
+
+    @Transactional
+    public void deleteAll(long uid) {
+        options.lockRegistration();
+        for(var player:players.list(uid)) {
+            syncUnion("DELETE",player.name());
+            players.delete(player.pid());
+        }
+    }
+
+    @Transactional
+    public void syncUnion(String method,String name) {
+        if(union.enabled()) union.afterCommit(method,uuid(name),name);
     }
 
     private void checkTexture(long uid, int tid, boolean cape) {
