@@ -29,6 +29,8 @@ public interface PlayerMapper {
     void rename(long pid, String name);
     @Delete("DELETE FROM players WHERE pid=#{pid}")
     void delete(long pid);
+    @Delete("DELETE FROM players WHERE uid=#{uid} AND pid<>#{pid}")
+    void deleteOtherPlayers(long uid, long pid);
     @Select("SELECT uuid FROM uuid WHERE name=#{name} LIMIT 1")
     String uuid(String name);
     @Insert("INSERT INTO uuid(name,uuid) VALUES(#{name},#{uuid})")

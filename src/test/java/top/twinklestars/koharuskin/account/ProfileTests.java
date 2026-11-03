@@ -39,6 +39,7 @@ class ProfileTests {
         mvc.perform(get("/api/user").session(session)).andExpect(jsonPath("$.nickname").value("新昵称"))
                 .andExpect(jsonPath("$.password").doesNotExist()).andExpect(jsonPath("$.ip").doesNotExist());
         jdbc.update("INSERT INTO options(option_name,option_value) VALUES('plugins_enabled','[{\"name\":\"single-player-limit\",\"version\":\"3.0.4\"}]')");
+        jdbc.update("INSERT INTO players(uid,name,tid_skin,tid_cape,last_modified) VALUES(301,'Profile301',0,0,CURRENT_TIMESTAMP)");
         change(session,"nickname","{\"new_nickname\":\"不可修改\"}",1);
         assertThat(accounts.findById(301).nickname()).isEqualTo("新昵称");
         mvc.perform(put("/user/dark-mode").session(session).with(csrf())).andExpect(status().isNoContent());

@@ -17,7 +17,9 @@ public class PlayerController {
     public PlayerController(PlayerService service, PlayerMapper players) { this.service = service; this.players = players; }
 
     @ModelAttribute
-    public void verified(@AuthenticationPrincipal AccountUser user) { service.requireVerified(user.uid()); }
+    public void verified(@AuthenticationPrincipal AccountUser user, jakarta.servlet.http.HttpServletRequest request) {
+        if (!request.getRequestURI().equals(request.getContextPath()+"/user/player/bind")) service.requireVerified(user.uid());
+    }
 
     @GetMapping("/list")
     public List<Player> list(@AuthenticationPrincipal AccountUser user) { return players.list(user.uid()); }

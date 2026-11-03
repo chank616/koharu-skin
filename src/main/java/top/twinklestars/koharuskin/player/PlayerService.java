@@ -42,15 +42,26 @@ public class PlayerService {
         options.lockRegistration();
         names.validate(name);
         boolean single = extensions.enabled("single-player-limit");
-        if (bind && (!single || !players.list(uid).isEmpty())) throw new BusinessException("当前账号无需绑定角色");
+        if (bind && (!single || players.list(uid).size() == 1)) throw new BusinessException("当前账号无需绑定角色");
         if (!bind && single) throw new BusinessException("本站启用了单角色限制，不能增加角色");
+        var existing = players.findByName(name);
+        if (bind && existing != null && existing.uid() == uid) {
+            if (players.countName(name) > 1) throw new BusinessException("旧角色名存在重复，请先由管理员处理");
+            players.deleteOtherPlayers(uid, existing.pid());
+            players.nickname(uid, existing.name());
+            uuid(existing.name());
+            return existing;
+        }
         if (players.countName(name) > 0) throw new BusinessException("此角色名已被使用");
         int score = players.lockScore(uid);
         int cost = bind ? 0 : options.number("score_per_player", 100);
         if (score < cost) throw new BusinessException("积分不足，无法添加角色");
         players.create(uid, name);
         players.changeScore(uid, -cost);
-        if (bind) players.nickname(uid, name);
+        if (bind) {
+            players.nickname(uid, name);
+            players.deleteOtherPlayers(uid, players.findByName(name).pid());
+        }
         uuid(name);
         return players.findByName(name);
     }

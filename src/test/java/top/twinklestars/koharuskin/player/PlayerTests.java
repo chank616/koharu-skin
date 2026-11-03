@@ -98,4 +98,35 @@ class PlayerTests {
         service.rename(1, player.pid(), "PlayerNew");
         assertThat(jdbc.queryForObject("SELECT nickname FROM users WHERE uid=1", String.class)).isEqualTo("PlayerNew");
     }
+
+    @Test
+    void bindingRetainsSelectedLegacyPlayerWithUuidAndTextures() {
+        Player keep = service.add(1, "KeepPlayer", false);
+        Player remove = service.add(1, "OtherOwned", false);
+        String uuid = service.uuid(keep.name());
+        jdbc.update("UPDATE players SET tid_skin=123,tid_cape=456 WHERE pid=?",keep.pid());
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('plugins_enabled','[{\"name\":\"single-player-limit\",\"version\":\"3.0.4\"}]')");
+        int score = players.score(1);
+        var bound = service.add(1,"KeepPlayer",true);
+        assertThat(bound.pid()).isEqualTo(keep.pid());
+        assertThat(bound.tidSkin()).isEqualTo(123);
+        assertThat(bound.tidCape()).isEqualTo(456);
+        assertThat(players.find(remove.pid())).isNull();
+        assertThat(players.score(1)).isEqualTo(score);
+        assertThat(service.uuid(keep.name())).isEqualTo(uuid);
+    }
+
+    @Test
+    void bindingRedirectsIncompleteAccountAndWorksBeforeEmailVerification() throws Exception {
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('plugins_enabled','[{\"name\":\"single-player-limit\",\"version\":\"3.0.4\"}]'),('require_verification','true')");
+        jdbc.update("UPDATE users SET verified=false WHERE uid=1");
+        mvc.perform(get("/user").with(user(owner))).andExpect(redirectedUrl("/user/player/bind"));
+        mvc.perform(get("/user/player/bind").with(user(owner))).andExpect(status().isOk());
+        mvc.perform(post("/user/sign").with(user(owner)).with(csrf()).accept("application/json"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.data.redirectTo").value("/user/player/bind"));
+        mvc.perform(post("/user/player/bind").with(user(owner)).with(csrf()).contentType("application/json").content("{\"player\":\"BoundPlayer\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/user/player/bind").with(user(owner))).andExpect(redirectedUrl("/user"));
+        mvc.perform(get("/user").with(user(owner))).andExpect(status().isOk());
+    }
 }

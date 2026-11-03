@@ -30,6 +30,11 @@ export default [
     ),
   },
   {
+    path: 'user/player/bind',
+    react: () => import('../views/user/BindPlayer'),
+    el: 'main',
+  },
+  {
     path: 'user/profile',
     module: [() => import('../views/user/profile/index')],
   },

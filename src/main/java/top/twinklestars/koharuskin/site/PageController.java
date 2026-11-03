@@ -111,6 +111,16 @@ public class PageController {
         return "user/players";
     }
 
+    @GetMapping("/user/player/bind")
+    public String bindPlayer(Model model, @AuthenticationPrincipal AccountUser user) {
+        var owned = players.list(user.uid());
+        if (!extensions.enabled("single-player-limit") || owned.size() == 1) return "redirect:/user";
+        page(model, "user/player/bind", Map.of("players", owned,
+                "min", options.number("player_name_length_min",3), "max", options.number("player_name_length_max",16)));
+        model.addAttribute("title", "绑定唯一角色");
+        return "auth/form";
+    }
+
     @GetMapping("/user/closet")
     public String closet(Model model, @AuthenticationPrincipal AccountUser user) {
         page(model, "user/closet", Map.of("unverified", options.enabled("require_verification", false) && !players.verified(user.uid()),
