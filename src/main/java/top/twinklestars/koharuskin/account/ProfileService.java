@@ -44,6 +44,14 @@ public class ProfileService {
     }
 
     @Transactional
+    public void bindEmail(long uid, String email) {
+        options.lockRegistration();
+        if (!accounts.lockById(uid).email().isEmpty()) throw new BusinessException("账号已绑定邮箱，请在个人资料中更改");
+        if (accounts.findByEmail(email) != null) throw new BusinessException("此邮箱已被使用");
+        accounts.bindEmail(uid, email);
+    }
+
+    @Transactional
     public void delete(long uid, String password) {
         options.lockRegistration();
         var user = accounts.lockById(uid);

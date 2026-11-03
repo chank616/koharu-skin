@@ -54,9 +54,11 @@ public class AuthController {
                     UsernamePasswordAuthenticationToken.unauthenticated(input.identification(), input.password()));
             establishSession(result, request, response);
             request.setAttribute("keep", input.keep());
-            remember.loginSuccess(request, response, result);
+            boolean needsEmail=((AccountUser)result.getPrincipal()).email().isEmpty();
+            if (needsEmail) request.getSession().setAttribute("emailBinding.keep",Boolean.TRUE.equals(input.keep()));
+            else remember.loginSuccess(request, response, result);
             attempts.clear(address);
-            return Map.of("code", 0, "message", "登录成功", "data", Map.of("redirectTo", top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession())));
+            return Map.of("code", 0, "message", "登录成功", "data", Map.of("redirectTo", needsEmail?"/auth/bind":top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession())));
         } catch (AuthenticationException error) {
             int failures = attempts.failed(address);
             return Map.of("code", 1, "message", "账号、密码错误或账号已被禁用", "data", Map.of("login_fails", failures));

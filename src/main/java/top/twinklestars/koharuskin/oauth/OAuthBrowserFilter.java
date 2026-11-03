@@ -35,6 +35,13 @@ public class OAuthBrowserFilter extends OncePerRequestFilter {
             } else response.sendError(401);
             return;
         }
+        if(user.email().isEmpty()) {
+            if(request.getMethod().equals("GET")) {
+                request.getSession().setAttribute("oauth.returnTo",request.getRequestURI()+(request.getQueryString()==null?"":"?"+request.getQueryString()));
+                response.sendRedirect(request.getContextPath()+"/auth/bind");
+            } else response.sendError(409,"请先绑定邮箱");
+            return;
+        }
         if(options.enabled("require_verification",false)&&!users.verified(user.uid())) { response.sendError(403,"请先验证邮箱"); return; }
         if(request.getMethod().equals("POST")) {
             var expected=csrf.loadDeferredToken(request,response).get();

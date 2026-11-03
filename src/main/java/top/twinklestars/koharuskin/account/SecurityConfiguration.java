@@ -57,6 +57,7 @@ public class SecurityConfiguration {
                                             HttpSessionCsrfTokenRepository csrf, JsonRememberMeServices remember,
                                             @Value("${koharu.remember-key}") String key, AccountMapper users) throws Exception {
         http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/bind").authenticated()
                 .requestMatchers("/", "/auth/**", "/app/**", "/api", "/api/", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/**", "/avatar/**", "/*.json", "/csl/*.json", "/official/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.HEAD, "/*.json", "/csl/*.json", "/official/**").permitAll()

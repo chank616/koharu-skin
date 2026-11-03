@@ -32,4 +32,7 @@ public interface AccountMapper {
 
     @Update("UPDATE users SET password=#{password},remember_token=NULL WHERE uid=#{uid}")
     void password(long uid, String password);
+
+    @Update("UPDATE users SET email=#{email},remember_token=NULL WHERE uid=#{uid}")
+    void bindEmail(long uid, String email);
 }

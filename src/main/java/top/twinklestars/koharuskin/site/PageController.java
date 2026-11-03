@@ -45,6 +45,9 @@ public class PageController {
     private final top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent;
     private final SitePresentation presentation;
     private final top.twinklestars.koharuskin.account.CaptchaService captcha;
+    private final top.twinklestars.koharuskin.account.ProfileService profileService;
+    private final org.springframework.security.web.context.SecurityContextRepository contexts;
+    private final top.twinklestars.koharuskin.account.JsonRememberMeServices remember;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -57,7 +60,10 @@ public class PageController {
                           top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer,
                           top.twinklestars.koharuskin.extension.henan.HenanLogin henan,
                           top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent,SitePresentation presentation,
-                          top.twinklestars.koharuskin.account.CaptchaService captcha) throws IOException {
+                          top.twinklestars.koharuskin.account.CaptchaService captcha,
+                          top.twinklestars.koharuskin.account.ProfileService profileService,
+                          org.springframework.security.web.context.SecurityContextRepository contexts,
+                          top.twinklestars.koharuskin.account.JsonRememberMeServices remember) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -76,6 +82,9 @@ public class PageController {
         this.oauthConsent=oauthConsent;
         this.presentation=presentation;
         this.captcha=captcha;
+        this.profileService=profileService;
+        this.contexts=contexts;
+        this.remember=remember;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -249,6 +258,7 @@ public class PageController {
 
     @GetMapping("/auth/login")
     public String login(Model model, HttpServletRequest request, @AuthenticationPrincipal AccountUser user) {
+        if (user != null && user.email().isEmpty()) return "redirect:/auth/bind";
         if (user != null) return "redirect:"+top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession());
         page(model, "auth/login", Map.of("tooManyFails", attempts.count(request.getRemoteAddr()) > 3,
                 "recaptcha", captcha.siteKey(), "invisible", options.enabled("recaptcha_invisible",false)));
@@ -339,6 +349,42 @@ public class PageController {
         model.addAttribute("title", "上传材质");
         return "skinlib/index";
     }
+
+    @GetMapping("/auth/bind")
+    public String bindEmail(Model model,@AuthenticationPrincipal AccountUser user) {
+        if (!user.email().isEmpty()) return "redirect:/user";
+        page(model,"auth/bind",Map.of());
+        return "auth/bind";
+    }
+
+    @PostMapping("/auth/bind")
+    public String bindEmail(Model model,@AuthenticationPrincipal AccountUser user,
+                            @jakarta.validation.Valid @org.springframework.web.bind.annotation.ModelAttribute("binding") EmailBindingForm form,
+                            org.springframework.validation.BindingResult errors,HttpServletRequest request,jakarta.servlet.http.HttpServletResponse response) {
+        if (!user.email().isEmpty()) return "redirect:/user";
+        if (errors.hasErrors()) {
+            model.addAttribute("errorMessage",errors.getAllErrors().getFirst().getDefaultMessage());
+            return bindEmail(model,user);
+        }
+        try { profileService.bindEmail(user.uid(),form.email()); }
+        catch (BusinessException error) {
+            model.addAttribute("errorMessage",error.getMessage());
+            return bindEmail(model,user);
+        }
+        var current=accounts.findById(user.uid());
+        var context=org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(current,null,current.getAuthorities()));
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+        contexts.saveContext(context,request,response);
+        request.setAttribute("keep",Boolean.TRUE.equals(request.getSession().getAttribute("emailBinding.keep")));
+        request.getSession().removeAttribute("emailBinding.keep");
+        remember.loginSuccess(request,response,context.getAuthentication());
+        return "redirect:"+top.twinklestars.koharuskin.oauth.OAuthBrowserFilter.afterLogin(request.getSession());
+    }
+
+    public record EmailBindingForm(@jakarta.validation.constraints.NotBlank(message="请输入邮箱地址")
+                                   @jakarta.validation.constraints.Email(message="邮箱格式不正确")
+                                   @jakarta.validation.constraints.Size(max=100,message="邮箱地址不能超过 100 个字符") String email) {}
 
     @GetMapping("/auth/forgot")
     public String forgot(Model model) {
