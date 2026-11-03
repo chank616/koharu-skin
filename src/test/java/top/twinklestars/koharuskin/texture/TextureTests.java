@@ -111,6 +111,27 @@ class TextureTests {
     }
 
     private int tid(Map<String,Object> result) { return ((Number)((Map<?,?>)result.get("data")).get("tid")).intValue(); }
+
+    @Test void avatarAliasesRenderSelectedSkinAnonymouslyAndHandleMissingProfiles() throws Exception {
+        int tid=tid(service.upload(owner,"Avatar skin","alex",false,png(64,64)));
+        service.avatar(owner,tid);
+        var player=players.add(1,"AvatarPlayer",false);
+        players.setTextures(1,player.pid(),tid,null);
+        byte[] expected=mvc.perform(get("/avatar/"+tid).param("size","64").param("3d",""))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        for(String path:new String[]{"/avatar/user/1","/avatar/player/AvatarPlayer","/avatar/hash/"+textures.find(tid).hash()}) {
+            mvc.perform(get(path).param("size","64").param("3d","")).andExpect(status().isOk())
+                    .andExpect(content().contentType("image/png")).andExpect(content().bytes(expected));
+            mvc.perform(get(path).param("size","99999")).andExpect(status().isBadRequest());
+        }
+        assertThat(ImageIO.read(new java.io.ByteArrayInputStream(expected)).getWidth()).isEqualTo(64);
+        mvc.perform(get("/avatar/player/Nonexistent")).andExpect(status().isNotFound());
+        byte[] fallback=mvc.perform(get("/avatar/0")).andReturn().getResponse().getContentAsByteArray();
+        mvc.perform(get("/avatar/user/99999")).andExpect(status().isOk()).andExpect(content().bytes(fallback));
+        mvc.perform(get("/avatar/hash/"+"0".repeat(64))).andExpect(status().isOk()).andExpect(content().bytes(fallback));
+        Files.delete(storage.resolve(textures.find(tid).hash()));
+        mvc.perform(get("/avatar/user/1")).andExpect(status().isOk()).andExpect(content().bytes(fallback));
+    }
     private MockMultipartFile png(int width,int height) throws Exception {
         var image = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
         for(int y=0;y<height;y++) for(int x=0;x<width;x++) image.setRGB(x,y,0xff004488 | ((x * 3) << 16));

@@ -8,6 +8,10 @@ import java.util.Map;
 public interface TextureMapper {
     @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE tid=#{tid}")
     Texture find(int tid);
+    @Select("SELECT tid FROM textures WHERE hash=#{hash} ORDER BY tid LIMIT 1")
+    Integer idByHash(String hash);
+    @Select("SELECT tid_skin FROM players WHERE name=#{name} LIMIT 1")
+    Integer playerSkin(String name);
     @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE hash=#{hash} AND (public=true OR uploader=#{uid}) ORDER BY tid LIMIT 1")
     Texture duplicate(String hash, long uid);
     @Select("SELECT tid,name,type,hash,size,uploader,public AS visible,upload_at,likes FROM textures WHERE hash=#{hash} AND uploader=#{uid} AND type=#{type} ORDER BY tid LIMIT 1")

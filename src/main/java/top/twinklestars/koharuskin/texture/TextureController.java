@@ -82,6 +82,28 @@ public class TextureController {
         return png(SkinImages.avatar(skin, size, query.containsKey("3d")));
     }
 
+    @GetMapping(value="/avatar/user/{uid}", produces=MediaType.IMAGE_PNG_VALUE)
+    public byte[] userAvatar(@PathVariable long uid, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
+                             @RequestParam java.util.Map<String,String> query) throws IOException {
+        Integer tid=textures.avatarId(uid);
+        return avatar(tid==null?0:tid,size,query);
+    }
+
+    @GetMapping(value="/avatar/player/{name}", produces=MediaType.IMAGE_PNG_VALUE)
+    public byte[] playerAvatar(@PathVariable String name, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
+                               @RequestParam java.util.Map<String,String> query) throws IOException {
+        Integer tid=textures.playerSkin(name);
+        if (tid==null) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"角色不存在");
+        return avatar(tid,size,query);
+    }
+
+    @GetMapping(value="/avatar/hash/{hash}", produces=MediaType.IMAGE_PNG_VALUE)
+    public byte[] hashAvatar(@PathVariable String hash, @RequestParam(defaultValue="100") @Min(8) @Max(512) int size,
+                             @RequestParam java.util.Map<String,String> query) throws IOException {
+        Integer tid=textures.idByHash(hash);
+        return avatar(tid==null?0:tid,size,query);
+    }
+
     private byte[] png(java.awt.image.BufferedImage image) throws IOException {
         var output = new ByteArrayOutputStream();
         ImageIO.write(image, "png", output);
