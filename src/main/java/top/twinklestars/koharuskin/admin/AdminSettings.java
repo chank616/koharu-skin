@@ -75,6 +75,7 @@ public class AdminSettings {
                     new Field("player_name_length_min","角色名最短长度","number","3"),
                     new Field("player_name_length_max","角色名最长长度","number","16"),
                     new Field("allow_downloading_texture","允许下载材质","checkbox","true"),
+                    new Field("auto_del_invalid_texture","访问时自动清理文件丢失的材质及其引用（不返还积分）","checkbox","false"),
                     new Field("status_code_for_private","私密材质访问状态码","status","403"),
                     new Field("texture_name_regexp","材质名称正则","text",""),
                     new Field("content_policy","上传内容规范","textarea",""))),

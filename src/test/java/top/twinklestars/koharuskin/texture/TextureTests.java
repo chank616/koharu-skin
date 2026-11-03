@@ -221,6 +221,50 @@ class TextureTests {
         assertThat(Files.isRegularFile(storage.resolve(texture.hash()))).isTrue();
     }
 
+    @Test void missingFileReturns404AndKeepsDataUnlessAutomaticCleanupIsEnabled() throws Exception {
+        int skin=tid(service.upload(owner,"Missing file","steve",true,png(64,64)));
+        int cape=tid(service.upload(owner,"Existing cape","cape",true,png(64,32)));
+        closet.add(other,skin,"Collected skin");
+        closet.add(other,cape,"Collected cape");
+        var player=players.add(2,"MissingSkin",false);
+        players.setTextures(2,player.pid(),skin,cape);
+        service.avatar(other,skin);
+        int ownerScore=users.score(1),otherScore=users.score(2);
+        Files.delete(storage.resolve(textures.find(skin).hash()));
+        mvc.perform(get("/skinlib/show/"+skin)).andExpect(status().isNotFound());
+        assertThat(textures.find(skin)).isNotNull();
+        assertThat(users.inCloset(2,skin)).isOne();
+        assertThat(users.find(player.pid()).tidSkin()).isEqualTo(skin);
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('auto_del_invalid_texture','true')");
+        mvc.perform(get("/skinlib/show/"+skin)).andExpect(status().isNotFound());
+        assertThat(textures.find(skin)).isNull();
+        assertThat(users.inCloset(1,skin)).isZero();assertThat(users.inCloset(2,skin)).isZero();
+        assertThat(users.find(player.pid()).tidSkin()).isZero();
+        assertThat(users.find(player.pid()).tidCape()).isEqualTo(cape);
+        assertThat(textures.avatarId(2)).isZero();
+        assertThat(users.score(1)).isEqualTo(ownerScore);assertThat(users.score(2)).isEqualTo(otherScore);
+        assertThat(Files.isRegularFile(storage.resolve(textures.find(cape).hash()))).isTrue();
+        mvc.perform(get("/skinlib/show/"+cape)).andExpect(status().isOk());
+        mvc.perform(get("/skinlib/show/"+skin)).andExpect(status().isNotFound());
+    }
+
+    @Test void automaticCleanupRespectsPrivateTextureAccessAndOnlyDeletesMissingFiles() throws Exception {
+        jdbc.update("INSERT INTO options(option_name,option_value) VALUES('auto_del_invalid_texture','true')");
+        int skin=tid(service.upload(owner,"Private missing","steve",false,png(64,64)));
+        var path=storage.resolve(textures.find(skin).hash());
+        mvc.perform(get("/skinlib/show/"+skin).with(user(owner))).andExpect(status().isOk());
+        assertThat(textures.find(skin)).isNotNull();
+        Files.delete(path);
+        mvc.perform(get("/skinlib/show/"+skin).with(user(other))).andExpect(status().isForbidden());
+        assertThat(textures.find(skin)).isNotNull();
+        Files.createDirectory(path);
+        mvc.perform(get("/skinlib/show/"+skin).with(user(owner))).andExpect(status().isNotFound());
+        assertThat(textures.find(skin)).isNotNull();
+        Files.delete(path);
+        mvc.perform(get("/skinlib/show/"+skin).with(user(owner))).andExpect(status().isNotFound());
+        assertThat(textures.find(skin)).isNull();
+    }
+
     private MockMultipartFile png(int width,int height) throws Exception {
         var image = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
         for(int y=0;y<height;y++) for(int x=0;x<width;x++) image.setRGB(x,y,0xff004488 | ((x * 3) << 16));

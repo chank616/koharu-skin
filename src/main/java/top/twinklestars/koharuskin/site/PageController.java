@@ -425,7 +425,7 @@ public class PageController {
 
     @GetMapping("/skinlib/show/{tid}")
     public String texture(Model model, @PathVariable int tid, @AuthenticationPrincipal AccountUser user) {
-        var texture = textures.readable(tid, user);
+        var texture = textures.view(tid, user);
         var uploader = accounts.findById(texture.uploader());
         page(model, "skinlib/show/" + tid, Map.of("download", options.enabled("allow_downloading_texture", true),
                 "currentUid", user == null ? 0 : user.uid(), "admin", user != null && user.permission() >= 1,

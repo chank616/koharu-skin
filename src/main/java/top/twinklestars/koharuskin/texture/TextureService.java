@@ -52,6 +52,23 @@ public class TextureService {
         return texture;
     }
 
+    public Texture view(int tid, AccountUser user) {
+        var texture=readable(tid,user);
+        if(Files.isRegularFile(directory.resolve(texture.hash()))) return texture;
+        if(options.enabled("auto_del_invalid_texture",false)) cleanup.executeWithoutResult(status -> {
+            options.lockRegistration();
+            var missing=readable(tid,user);
+            if(Files.notExists(directory.resolve(missing.hash()))) {
+                // 原站自动清理不会触发删除积分结算；只解除失效材质的引用。
+                for(long uid:textures.collectors(tid)) closet.remove(uid,tid);
+                textures.clearPlayers(tid,-1);
+                textures.clearAvatars(tid);
+                textures.delete(tid);
+            }
+        });
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,"材质文件不存在");
+    }
+
     private Texture owned(int tid, AccountUser user) {
         players.requireVerified(user.uid());
         var texture = readable(tid, user);
