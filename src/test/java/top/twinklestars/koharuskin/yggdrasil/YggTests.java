@@ -66,7 +66,7 @@ class YggTests {
     }
     @BeforeEach void fixture() {
         time=Instant.parse("2026-11-03T06:00:00Z").plusSeconds(sequence.incrementAndGet()*3600); when(clock.instant()).thenReturn(time);
-        for (String table:List.of("koharu_ygg_sessions","koharu_ygg_tokens","user_closet","textures","uuid","players","users","options")) jdbc.update("DELETE FROM "+table);
+        for (String table:List.of("ygg_log","koharu_ygg_sessions","koharu_ygg_tokens","user_closet","textures","uuid","players","users","options")) jdbc.update("DELETE FROM "+table);
         jdbc.update("INSERT INTO options(option_name,option_value) VALUES('register_with_player_name','true'),('plugins_enabled','[{\"name\":\"yggdrasil-api\",\"version\":\"5.2.2\"}]'),('ygg_rate_limit','0'),('ygg_token_expire_1','600'),('ygg_token_expire_2','1200'),('require_verification','true'),('score_per_closet_item','2')");
         options.insert("ygg_private_key",YggKeys.pem("PRIVATE KEY",keyPair.getPrivate().getEncoded()));
         var encoder=new BCryptPasswordEncoder(4);
@@ -314,6 +314,58 @@ class YggTests {
         options.update("plugins_enabled","[]");
         mvc.perform(get(ROOT)).andExpect(status().isNotFound());
         postJson("/authserver/authenticate",Map.of("username","PlayerOne","password","test-password")).andExpect(status().isNotFound());
+    }
+
+    @Test void authenticationAuditRecordsSuccessfulActionsWithoutCredentials() throws Exception {
+        options.insert("ygg_verbose_log","true");
+        String access=token(login("PlayerOne"));
+        postJson("/authserver/validate",Map.of("accessToken",access)).andExpect(status().isNoContent());
+        postJson("/sessionserver/session/minecraft/join",Map.of("accessToken",access,"selectedProfile",ONE,"serverId","audit-server")).andExpect(status().isNoContent());
+        mvc.perform(get(ROOT+"/sessionserver/session/minecraft/hasJoined").param("username","PlayerOne").param("serverId","audit-server"))
+                .andExpect(status().isOk());
+        String refreshed=token(body(postJson("/authserver/refresh",Map.of("accessToken",access)).andExpect(status().isOk())));
+        postJson("/authserver/invalidate",Map.of("accessToken",refreshed)).andExpect(status().isNoContent());
+        postJson("/authserver/signout",Map.of("username","PlayerOne","password","test-password")).andExpect(status().isNoContent());
+        assertThat(jdbc.queryForList("SELECT action FROM ygg_log ORDER BY id",String.class))
+                .containsExactly("authenticate","validate","join","has_joined","refresh","invalidate","signout");
+        assertThat(jdbc.queryForList("SELECT user_id FROM ygg_log",Long.class)).containsOnly(1L);
+        assertThat(jdbc.queryForList("SELECT player_id FROM ygg_log ORDER BY id",Long.class)).containsExactly(101L,101L,101L,101L,101L,101L,0L);
+        assertThat(jdbc.queryForList("SELECT ip FROM ygg_log",String.class)).containsOnly("127.0.0.1");
+        assertThat(jdbc.queryForList("SELECT parameters FROM ygg_log WHERE action IN ('join','has_joined')",String.class))
+                .containsOnly("{\"serverHash\":\""+YggAuth.hash("audit-server")+"\"}");
+        assertThat(jdbc.queryForList("SELECT * FROM ygg_log").toString()).doesNotContain(access,refreshed,"test-password","arbitrary client token");
+        postJson("/authserver/authenticate",Map.of("username","PlayerOne","password","wrong")).andExpect(status().isForbidden());
+        postJson("/authserver/validate",Map.of("accessToken",refreshed)).andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ygg_log",Long.class)).isEqualTo(7);
+    }
+
+    @Test void auditSwitchDoesNotEraseHistoryAndUnknownInvalidationRemainsIdempotent() throws Exception {
+        String access=token(login("PlayerOne"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ygg_log",Long.class)).isZero();
+        options.insert("ygg_verbose_log","true");
+        postJson("/authserver/validate",Map.of("accessToken",access)).andExpect(status().isNoContent());
+        postJson("/authserver/invalidate",Map.of("accessToken","unknown-token")).andExpect(status().isNoContent());
+        assertThat(jdbc.queryForList("SELECT user_id FROM ygg_log ORDER BY id",Long.class)).containsExactly(1L,0L);
+        options.update("ygg_verbose_log","false");
+        postJson("/authserver/validate",Map.of("accessToken",access)).andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ygg_log",Long.class)).isEqualTo(2);
+    }
+
+    @Test void auditHistoryRequiresAdminAndPaginatesEscapedLegacyParameters() throws Exception {
+        for(int i=0;i<11;i++) jdbc.update("INSERT INTO ygg_log(action,user_id,player_id,parameters,ip,time) VALUES('authenticate',1,101,?,'192.0.2.1',CURRENT_TIMESTAMP)","<script>legacy-"+i+"</script>");
+        mvc.perform(get("/admin/yggdrasil-log")).andExpect(status().is3xxRedirection());
+        mvc.perform(get("/admin/yggdrasil-log").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(accounts.findById(1))))
+                .andExpect(status().isForbidden());
+        jdbc.update("UPDATE users SET permission=2 WHERE uid=1");
+        var admin=org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(accounts.findById(1));
+        String html=mvc.perform(get("/admin/yggdrasil-log").with(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(html).contains("共 11 条","&lt;script&gt;legacy-10&lt;/script&gt;","日志记录已关闭","下一页").doesNotContain("<script>legacy","legacy-0&lt;");
+        String last=mvc.perform(get("/admin/yggdrasil-log").param("page","2147483647").with(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(last).contains("legacy-0&lt;").doesNotContain("legacy-1&lt;");
+        assertThat(org.jsoup.Jsoup.parse(last).select(".card-footer a").eachText()).containsExactly("上一页");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ygg_log",Long.class)).isEqualTo(11);
     }
 
     private JsonNode login(String username) throws Exception {

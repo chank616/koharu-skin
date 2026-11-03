@@ -52,6 +52,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles;
     private final top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist;
     private final top.twinklestars.koharuskin.oauth.YggConnect yggConnect;
+    private final top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -71,7 +72,8 @@ public class PageController {
                           top.twinklestars.koharuskin.yggdrasil.UnionMember union,
                           top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles,
                           top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist,
-                          top.twinklestars.koharuskin.oauth.YggConnect yggConnect) throws IOException {
+                          top.twinklestars.koharuskin.oauth.YggConnect yggConnect,
+                          top.twinklestars.koharuskin.yggdrasil.YggLogs yggLogs) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -97,6 +99,7 @@ public class PageController {
         this.unionProfiles=unionProfiles;
         this.unionBlacklist=unionBlacklist;
         this.yggConnect=yggConnect;
+        this.yggLogs=yggLogs;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -125,6 +128,14 @@ public class PageController {
         else try { model.addAttribute("unionProfiles",unionProfiles.profiles(user.uid())); }
         catch(org.springframework.web.server.ResponseStatusException error) { model.addAttribute("unionError",error.getReason()); }
         return "user/union";
+    }
+
+    @GetMapping("/admin/yggdrasil-log")
+    public String yggLogs(Model model,@RequestParam(defaultValue="1") int page) {
+        page(model,"admin/yggdrasil-log",Map.of());
+        model.addAttribute("logs",yggLogs.page(page));
+        model.addAttribute("recording",yggLogs.enabled());
+        return "admin/yggdrasil-log";
     }
 
     @GetMapping("/admin/union/view/blacklist")

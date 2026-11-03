@@ -14,6 +14,8 @@ public class AdminSettings {
     public record Group(String key,String title,List<Field> fields) {}
     private final SiteOptions options;
     private final tools.jackson.databind.json.JsonMapper json;
+    @org.springframework.beans.factory.annotation.Value("${YGG_VERBOSE_LOG:false}")
+    private boolean yggLogDefault;
     public AdminSettings(SiteOptions options,tools.jackson.databind.json.JsonMapper json) { this.options=options; this.json=json; }
 
     public List<Group> groups(String page) {
@@ -50,6 +52,7 @@ public class AdminSettings {
                             new Field("ygg_skin_domain","额外材质域名（逗号分隔）","text",""),
                             new Field("ygg_search_profile_max","一次查询角色数量上限","number","5"),
                             new Field("ygg_restore_api","启用 Restore API（为调用方提交的材质值签名，配合修改版 MultiLogin 使用）","checkbox","false"),
+                            new Field("ygg_verbose_log","记录外置登录和进服日志（不包含密码和令牌）","checkbox",Boolean.toString(yggLogDefault)),
                             new Field("ygg_enable_ali","允许启动器从本站地址自动发现认证接口","checkbox","true"),
                             new Field("ygg_show_config_section","在用户中心显示外置登录地址","checkbox","true"))),
                     new Group("restricted-email-domains","邮箱域名限制",List.of(

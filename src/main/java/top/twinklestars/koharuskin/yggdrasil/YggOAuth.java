@@ -80,13 +80,16 @@ public class YggOAuth {
         return player!=null&&player.uid()==token.userUid()&&player.name().equals(token.profileName())
                 &&(renamed==null||renamed<=token.issuedAt())?player:null;
     }
-    public void invalidate(String value) {
+    public long invalidate(String value) {
         if(value.contains(".")) {
-            try { legacy.revokeToken(janus.read(value).id()); } catch(BadOpaqueTokenException ignored) { /* 协议要求无效令牌也返回 204。 */ }
+            try {
+                var access=janus.read(value);legacy.revokeToken(access.id());return access.user().uid();
+            } catch(BadOpaqueTokenException ignored) { /* 协议要求无效令牌也返回 204。 */ }
         } else {
             var grant=authorizations.findByToken(value,OAuth2TokenType.ACCESS_TOKEN);
-            if(grant!=null) authorizations.remove(grant);
+            if(grant!=null) { authorizations.remove(grant);return Long.parseLong(grant.getAttribute("koharu.uid")); }
         }
+        return 0;
     }
     public void signout(long uid) {
         legacy.revokeUser(uid);

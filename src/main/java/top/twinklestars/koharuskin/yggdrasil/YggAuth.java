@@ -25,18 +25,20 @@ public class YggAuth {
     private final SiteOptions options;
     private final Clock clock;
     private final YggOAuth oauth;
+    private final YggLogs logs;
     private final SecureRandom random=new SecureRandom();
     private final ConcurrentHashMap<String,Long> attempts=new ConcurrentHashMap<>();
 
     public YggAuth(YggMapper tokens, AccountMapper accounts, PlayerMapper players, YggProfiles profiles,
-                   PasswordEncoder passwords, SiteOptions options, Clock clock,YggOAuth oauth) {
+                   PasswordEncoder passwords, SiteOptions options, Clock clock,YggOAuth oauth,YggLogs logs) {
         this.tokens=tokens; this.accounts=accounts; this.players=players; this.profiles=profiles;
         this.passwords=passwords; this.options=options; this.clock=clock;
         this.oauth=oauth;
+        this.logs=logs;
     }
 
     @Transactional
-    public Map<String,Object> authenticate(String name,String password,String clientToken,boolean requestUser) {
+    public Map<String,Object> authenticate(String name,String password,String clientToken,boolean requestUser,String ip) {
         var account=credentials(name,password);
         requireUsableAccount(account);
         options.lockRegistration();
@@ -46,11 +48,13 @@ public class YggAuth {
         var owned=players.list(account.uid());
         Player selected=owned.size()==1?owned.getFirst():null;
         if (!account.email().equalsIgnoreCase(name)) selected=owned.stream().filter(p -> p.name().equalsIgnoreCase(name)).findFirst().orElse(null);
-        return issue(account,clientToken==null?UUID.randomUUID().toString().replace("-",""):clientToken,selected,requestUser,owned);
+        var response=issue(account,clientToken==null?UUID.randomUUID().toString().replace("-",""):clientToken,selected,requestUser,owned);
+        logs.record("authenticate",account.uid(),selected==null?0:selected.pid(),ip);
+        return response;
     }
 
     @Transactional
-    public Map<String,Object> refresh(String accessToken,String clientToken,String profileId,String profileName,boolean requestUser) {
+    public Map<String,Object> refresh(String accessToken,String clientToken,String profileId,String profileName,boolean requestUser,String ip) {
         options.lockRegistration();
         var token=tokens.lock(hash(accessToken));
         check(token,clientToken,true);
@@ -64,55 +68,75 @@ public class YggAuth {
             }
         }
         tokens.delete(token.tokenHash());
-        return issue(account,token.clientToken(),selected,requestUser,players.list(account.uid()));
+        var response=issue(account,token.clientToken(),selected,requestUser,players.list(account.uid()));
+        logs.record("refresh",account.uid(),selected==null?0:selected.pid(),ip);
+        return response;
     }
 
-    public void validate(String accessToken,String clientToken) {
+    public void validate(String accessToken,String clientToken,String ip) {
         var token=tokens.find(hash(accessToken));
-        if(token==null) oauth.read(accessToken); else check(token,clientToken,false);
+        if(token==null) {
+            var external=oauth.read(accessToken);
+            logs.record("validate",external.userUid(),tokens.profile(external.profileUuid()).pid(),ip);
+        } else {
+            check(token,clientToken,false);
+            logs.record("validate",token.userUid(),token.playerPid()==null?0:token.playerPid(),ip);
+        }
     }
 
     @Transactional
-    public void invalidate(String accessToken) {
-        tokens.delete(hash(accessToken));oauth.invalidate(accessToken);
+    public void invalidate(String accessToken,String ip) {
+        var token=tokens.find(hash(accessToken));
+        tokens.delete(hash(accessToken));long externalUid=oauth.invalidate(accessToken);
+        logs.record("invalidate",token==null?externalUid:token.userUid(),token==null||token.playerPid()==null?0:token.playerPid(),ip);
     }
 
     @Transactional
-    public void signout(String name,String password) {
+    public void signout(String name,String password,String ip) {
         var account=credentials(name,password);
         options.lockRegistration();
         accounts.lockById(account.uid());
         tokens.revokeUser(account.uid());
         oauth.signout(account.uid());
+        logs.record("signout",account.uid(),0,ip);
     }
 
     @Transactional
     public void join(String accessToken,String profileId,String serverId,String ip) {
         var token=tokens.lock(hash(accessToken));
+        Player player;
         if(token==null) {
             var external=oauth.read(accessToken);
             if(!external.profileUuid().equals(profileId)) throw YggException.invalid();
             oauth.remember(external);
+            player=tokens.profile(external.profileUuid());
         } else {
             check(token,null,false);
             if (token.playerPid()==null || !players.uuid(players.find(token.playerPid()).name()).replace("-","").equals(profileId)) throw YggException.invalid();
+            player=players.find(token.playerPid());
         }
         tokens.deleteExpiredSessions(now());
         tokens.join(new YggMapper.Join(hash(serverId),hash(accessToken),ip,now()+120));
+        logs.record("join",player.uid(),player.pid(),ip,"{\"serverHash\":\""+hash(serverId)+"\"}");
     }
 
-    public Map<String,Object> hasJoined(String name,String serverId,String ip) {
+    public Map<String,Object> hasJoined(String name,String serverId,String ip,String requestIp) {
         var session=tokens.session(hash(serverId));
         if (session==null || session.expiresAt()<=now() || (ip!=null && !ip.equals(session.clientIp()))) return null;
         var token=tokens.find(session.tokenHash());
         if(token==null) {
             var player=oauth.joined(session.tokenHash());
-            return player!=null&&player.name().equalsIgnoreCase(name)?profiles.full(player,false):null;
+            if(player==null||!player.name().equalsIgnoreCase(name)) return null;
+            var profile=profiles.full(player,false);
+            logs.record("has_joined",player.uid(),player.pid(),requestIp,"{\"serverHash\":\""+hash(serverId)+"\"}");
+            return profile;
         }
         if (!usable(token,false) || token.playerPid()==null) return null;
         var player=players.find(token.playerPid());
         if (!player.name().equalsIgnoreCase(name)) return null;
-        return profiles.full(player,false);
+        var profile=profiles.full(player,false);
+        logs.record("has_joined",player.uid(),player.pid(),requestIp,"{\"serverHash\":\""+hash(serverId)+"\"}");
+        return profile;
     }
 
     public AccountUser bearer(String authorization,String profileId) {

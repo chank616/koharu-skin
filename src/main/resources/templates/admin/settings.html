@@ -14,6 +14,7 @@
     </div></nav>
     <div class="content-wrapper"><section class="content pt-4"><div class="container">
         <h1 class="h3 mb-3" th:text="${title}"></h1>
+        <p th:if="${section=='extensions/config'}"><a th:href="@{/admin/yggdrasil-log}">查看外置登录日志</a></p>
         <div class="alert alert-success" role="status" th:if="${param.saved != null}">设置已保存</div>
         <div class="alert alert-danger" role="alert" th:if="${error != null}" th:text="${error}"></div>
         <form class="card" method="post" th:action="@{'/admin/'+${section}}" th:each="group : ${groups}" th:id="${group.key}">

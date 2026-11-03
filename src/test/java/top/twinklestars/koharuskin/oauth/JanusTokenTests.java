@@ -125,6 +125,7 @@ class JanusTokenTests {
         options.update("plugins_enabled","[]");info(issued.jwt()).andExpect(status().isUnauthorized());
     }
     @Test void janusTokenJoinsOnlySelectedProfileAndReturnsSignedTextureProperties() throws Exception {
+        jdbc.update("DELETE FROM ygg_log");options.insert("ygg_verbose_log","true");
         options.update("plugins_enabled","[\"yggdrasil-connect\"]");
         mvc.perform(get("/api/yggdrasil")).andExpect(status().isOk()).andExpect(jsonPath("$.meta['feature.openid_configuration_url']").value(ISSUER+"/.well-known/openid-configuration"));
         var token=issue(Set.of("openid",OAuthScopes.SELECT,OAuthScopes.JOIN),ONE);
@@ -132,6 +133,9 @@ class JanusTokenTests {
         join(token.jwt(),OTHER,"wrong-role").andExpect(status().isForbidden());
         join(token.jwt(),ONE,"janus-server").andExpect(status().isNoContent());
         var response=joined("janus-server","OwnPlayer","127.0.0.1").andExpect(status().isOk()).andExpect(jsonPath("$.id").value(ONE)).andReturn();
+        assertThat(jdbc.queryForList("SELECT action FROM ygg_log ORDER BY id",String.class)).containsExactly("validate","join","has_joined");
+        assertThat(jdbc.queryForList("SELECT user_id FROM ygg_log",Long.class)).containsOnly(3101L);
+        assertThat(jdbc.queryForList("SELECT * FROM ygg_log").toString()).doesNotContain(token.jwt());
         var property=json.readTree(response.getResponse().getContentAsString()).get("properties").get(0);
         var verifier=Signature.getInstance("SHA1withRSA");verifier.initVerify(textureKeys.pair().getPublic());
         verifier.update(property.get("value").asString().getBytes(java.nio.charset.StandardCharsets.UTF_8));

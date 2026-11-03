@@ -179,11 +179,15 @@ class YggConnectTests {
     }
 
     @Test void oauthGameTokenJoinsAndRefreshInvalidatesPreviouslyJoinedSession() throws Exception {
+        jdbc.update("DELETE FROM ygg_log");options.insert("ygg_verbose_log","true");
         var grant=grant("openid "+OAuthScopes.SELECT+" "+OAuthScopes.JOIN);
         select(grant,ONE,owner).andExpect(status().is3xxRedirection());
         var token=body(exchange(grant.code()).andExpect(status().isOk()));String access=token.get("access_token").asString();
         join(access,OTHER,"foreign").andExpect(status().isForbidden());join(access,ONE,"oauth-game").andExpect(status().isNoContent());
         joined("oauth-game").andExpect(status().isOk()).andExpect(jsonPath("$.id").value(ONE));
+        assertThat(jdbc.queryForList("SELECT action FROM ygg_log ORDER BY id",String.class)).containsExactly("join","has_joined");
+        assertThat(jdbc.queryForList("SELECT user_id FROM ygg_log",Long.class)).containsOnly(owner.uid());
+        assertThat(jdbc.queryForList("SELECT * FROM ygg_log").toString()).doesNotContain(access);
         mvc.perform(post("/api/yggdrasil/authserver/refresh").contentType("application/json").content(json.writeValueAsString(Map.of("accessToken",access))))
                 .andExpect(status().isForbidden());
         var renewed=body(mvc.perform(post("/oauth/token").param("grant_type","refresh_token").param("client_id",""+client.id()).param("client_secret",client.secret())

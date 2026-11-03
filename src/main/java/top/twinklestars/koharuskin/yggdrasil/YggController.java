@@ -62,27 +62,27 @@ public class YggController {
     }
 
     @PostMapping(value="/authserver/authenticate",consumes=MediaType.APPLICATION_JSON_VALUE)
-    public Map<String,Object> authenticate(@Valid @RequestBody Login input) {
-        return auth.authenticate(input.username(),input.password(),input.clientToken(),Boolean.TRUE.equals(input.requestUser()));
+    public Map<String,Object> authenticate(@Valid @RequestBody Login input,HttpServletRequest request) {
+        return auth.authenticate(input.username(),input.password(),input.clientToken(),Boolean.TRUE.equals(input.requestUser()),request.getRemoteAddr());
     }
     @PostMapping(value="/authserver/refresh",consumes=MediaType.APPLICATION_JSON_VALUE)
-    public Map<String,Object> refresh(@Valid @RequestBody Refresh input) {
+    public Map<String,Object> refresh(@Valid @RequestBody Refresh input,HttpServletRequest request) {
         var profile=input.selectedProfile();
-        return auth.refresh(input.accessToken(),input.clientToken(),profile==null?null:profile.id(),profile==null?null:profile.name(),Boolean.TRUE.equals(input.requestUser()));
+        return auth.refresh(input.accessToken(),input.clientToken(),profile==null?null:profile.id(),profile==null?null:profile.name(),Boolean.TRUE.equals(input.requestUser()),request.getRemoteAddr());
     }
     @PostMapping(value="/authserver/validate",consumes=MediaType.APPLICATION_JSON_VALUE) @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void validate(@Valid @RequestBody TokenInput input) { auth.validate(input.accessToken(),input.clientToken()); }
+    public void validate(@Valid @RequestBody TokenInput input,HttpServletRequest request) { auth.validate(input.accessToken(),input.clientToken(),request.getRemoteAddr()); }
     @PostMapping(value="/authserver/invalidate",consumes=MediaType.APPLICATION_JSON_VALUE) @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void invalidate(@Valid @RequestBody TokenInput input) { auth.invalidate(input.accessToken()); }
+    public void invalidate(@Valid @RequestBody TokenInput input,HttpServletRequest request) { auth.invalidate(input.accessToken(),request.getRemoteAddr()); }
     @PostMapping(value="/authserver/signout",consumes=MediaType.APPLICATION_JSON_VALUE) @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void signout(@Valid @RequestBody Login input) { auth.signout(input.username(),input.password()); }
+    public void signout(@Valid @RequestBody Login input,HttpServletRequest request) { auth.signout(input.username(),input.password(),request.getRemoteAddr()); }
     @PostMapping(value="/sessionserver/session/minecraft/join",consumes=MediaType.APPLICATION_JSON_VALUE) @ResponseStatus(HttpStatus.NO_CONTENT)
     public void join(@Valid @RequestBody Join input,HttpServletRequest request) {
         auth.join(input.accessToken(),input.selectedProfile(),input.serverId(),request.getRemoteAddr());
     }
     @GetMapping("/sessionserver/session/minecraft/hasJoined")
-    public ResponseEntity<?> hasJoined(@RequestParam String username,@RequestParam String serverId,@RequestParam(required=false) String ip) {
-        var profile=auth.hasJoined(username,serverId,ip);
+    public ResponseEntity<?> hasJoined(@RequestParam String username,@RequestParam String serverId,@RequestParam(required=false) String ip,HttpServletRequest request) {
+        var profile=auth.hasJoined(username,serverId,ip,request.getRemoteAddr());
         return profile==null?ResponseEntity.noContent().build():ResponseEntity.ok(profile);
     }
     @GetMapping("/sessionserver/session/minecraft/profile/{uuid}")

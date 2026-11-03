@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('外置登录日志')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a><a th:href="@{/admin}" class="nav-link">后台首页</a>
+        <a th:href="@{/admin/extensions/config#yggdrasil-api}" class="nav-link">外置登录配置</a>
+        <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3">外置登录日志</h1>
+        <p th:unless="${recording}">日志记录已关闭，已有记录仍可查看。可在外置登录配置中开启。</p>
+        <div class="card"><div class="card-body table-responsive p-0">
+            <table class="table table-striped"><thead><tr><th>ID</th><th>操作</th><th>用户 ID</th><th>角色 ID</th><th>参数</th><th>请求 IP</th><th>时间</th></tr></thead><tbody>
+                <tr th:each="entry : ${logs.entries}"><td th:text="${entry.id}"></td><td th:text="${entry.label()}"></td><td th:text="${entry.userId}"></td><td th:text="${entry.playerId}"></td><td><pre class="mb-0" th:text="${entry.parameters}"></pre></td><td th:text="${entry.ip}"></td><td th:text="${#temporals.format(entry.time,'yyyy-MM-dd HH:mm:ss')}"></td></tr>
+                <tr th:if="${#lists.isEmpty(logs.entries)}"><td colspan="7" class="text-center">暂无记录。</td></tr>
+            </tbody></table>
+        </div><div class="card-footer d-flex align-items-center">
+            <span class="mr-auto" th:text="${'共 '+logs.total+' 条'}"></span>
+            <a class="btn btn-default" th:if="${logs.currentPage>1}" th:href="@{/admin/yggdrasil-log(page=${logs.currentPage-1})}">上一页</a>
+            <span class="mx-3" th:text="${logs.currentPage+' / '+logs.lastPage}"></span>
+            <a class="btn btn-default" th:if="${logs.currentPage<logs.lastPage}" th:href="@{/admin/yggdrasil-log(page=${logs.currentPage+1})}">下一页</a>
+        </div></div>
+    </div></section></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body></html>
