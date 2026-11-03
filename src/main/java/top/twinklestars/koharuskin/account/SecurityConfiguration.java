@@ -78,7 +78,8 @@ public class SecurityConfiguration {
                     config.setAllowedHeaders(List.of("Content-Type")); return config;
                 }))
                 .exceptionHandling(config -> config.authenticationEntryPoint((request, response, error) -> {
-                    if(request.getMethod().equals("GET")&&request.getRequestURI().equals(request.getContextPath()+top.twinklestars.koharuskin.yggdrasil.UnionOAuth.ROOT+"/grant"))
+                    if(request.getMethod().equals("GET")&&(request.getRequestURI().equals(request.getContextPath()+top.twinklestars.koharuskin.yggdrasil.UnionOAuth.ROOT+"/grant")
+                            ||request.getRequestURI().equals(request.getContextPath()+"/yggc/callback")))
                         request.getSession().setAttribute("oauth.returnTo",request.getRequestURI()+(request.getQueryString()==null?"":"?"+request.getQueryString()));
                     if (request.getHeader("Accept") != null && request.getHeader("Accept").contains("application/json")) {
                         response.setStatus(401);

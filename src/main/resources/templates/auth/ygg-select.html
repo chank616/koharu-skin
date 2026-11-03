@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('选择游戏角色')}"></head>
+<body class="hold-transition login-page" th:classappend="${darkMode} ? 'dark-mode'">
+<main class="login-box"><div class="card"><div class="card-body">
+    <h1 class="h4">选择游戏角色</h1><p>选择允许 <strong th:text="${selection.clientName}"></strong> 使用的角色。</p>
+    <p th:if="${#lists.isEmpty(selection.profiles)}">你还没有角色，请先到用户中心创建角色，再重新发起授权。</p>
+    <form method="post" th:action="@{/yggc/callback}" th:unless="${#lists.isEmpty(selection.profiles)}">
+        <input type="hidden" name="code_id" th:value="${selection.codeId}"><input type="hidden" name="state" th:value="${selection.state}">
+        <div class="form-check mb-2" th:each="profile : ${selection.profiles}">
+            <input type="radio" class="form-check-input" name="selectedProfile" th:id="${'profile-'+profile.id}" th:value="${profile.id}" required>
+            <label class="form-check-label" th:for="${'profile-'+profile.id}" th:text="${profile.name}"></label>
+        </div><button class="btn btn-primary mt-3" type="submit">使用此角色</button>
+    </form>
+    <form method="post" th:action="@{/yggc/cancel}" class="mt-2"><input type="hidden" name="code_id" th:value="${selection.codeId}"><input type="hidden" name="state" th:value="${selection.state}"><button class="btn btn-outline-secondary" type="submit">取消授权</button></form>
+</div></div></main>
+</body></html>

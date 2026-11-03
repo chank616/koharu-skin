@@ -15,3 +15,9 @@ CREATE TABLE IF NOT EXISTS koharu_oauth_consents (
     authorities TEXT NOT NULL,
     PRIMARY KEY(client_id,principal_name)
 );
+CREATE TABLE IF NOT EXISTS code_id_to_uuid (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code_id VARCHAR(255) NOT NULL UNIQUE,
+    uuid VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

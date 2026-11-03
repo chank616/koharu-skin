@@ -33,6 +33,7 @@ public class AdminSettings {
             case "resource" -> List.of(new Group("resources","静态资源 CDN",List.of(
                     new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))));
             case "extensions" -> List.of(
+                    new Group("ygg-connect","OIDC 角色授权",List.of(new Field("ygg_connect_server_url","OIDC 服务根地址（留空表示未配置）","text",""))),
                     new Group("union","联合认证",List.of(
                             new Field("union_api_root","联盟 API 根地址","text",""),
                             new Field("union_member_key","成员密钥（留空保留现有密钥）","password",""),
@@ -181,6 +182,17 @@ public class AdminSettings {
             if(key.isEmpty()) key=options.text("union_member_key","");
             if(key.isBlank()) throw new BusinessException("请填写联盟成员密钥");
             values.put("union_member_key",key);
+        }
+        if(groupKey.equals("ygg-connect")) {
+            String root=values.get("ygg_connect_server_url").trim().replaceAll("/+$","");
+            if(!root.isEmpty()) {
+                try {
+                    var uri=java.net.URI.create(root);
+                    if(!Set.of("http","https").contains(Objects.toString(uri.getScheme(),""))||uri.getHost()==null||uri.getUserInfo()!=null||uri.getQuery()!=null||uri.getFragment()!=null)
+                        throw new IllegalArgumentException();
+                } catch(IllegalArgumentException error) { throw new BusinessException("请填写完整的 HTTP 或 HTTPS OIDC 服务根地址"); }
+            }
+            values.put("ygg_connect_server_url",root);
         }
         if(groupKey.equals("recaptcha")) {
             String sitekey=values.get("recaptcha_sitekey").trim();

@@ -10,7 +10,7 @@ import java.io.IOException;
 @Configuration
 public class EmailBinding implements WebMvcConfigurer, HandlerInterceptor {
     @Override public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(this).order(-100).addPathPatterns("/user/**","/admin/**","/oauth/**","/union/**","/texture/**","/skinlib/upload","/skinlib/report");
+        registry.addInterceptor(this).order(-100).addPathPatterns("/user/**","/admin/**","/oauth/**","/union/**","/yggc/callback","/yggc/cancel","/texture/**","/skinlib/upload","/skinlib/report");
     }
     @Override public boolean preHandle(HttpServletRequest request,HttpServletResponse response,Object handler) throws IOException {
         var authentication=SecurityContextHolder.getContext().getAuthentication();

@@ -51,6 +51,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.yggdrasil.UnionMember union;
     private final top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles;
     private final top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist;
+    private final top.twinklestars.koharuskin.oauth.YggConnect yggConnect;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -69,7 +70,8 @@ public class PageController {
                           top.twinklestars.koharuskin.account.JsonRememberMeServices remember,
                           top.twinklestars.koharuskin.yggdrasil.UnionMember union,
                           top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles,
-                          top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist) throws IOException {
+                          top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist,
+                          top.twinklestars.koharuskin.oauth.YggConnect yggConnect) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -94,6 +96,7 @@ public class PageController {
         this.union=union;
         this.unionProfiles=unionProfiles;
         this.unionBlacklist=unionBlacklist;
+        this.yggConnect=yggConnect;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -140,6 +143,31 @@ public class PageController {
         playerService.requireVerified(user.uid());
         page(model,"user/oauth/manage",Map.of());
         return "user/oauth";
+    }
+
+    @GetMapping("/yggc/callback")
+    public String yggCallback(Model model,@AuthenticationPrincipal AccountUser user,@RequestParam String state,
+                              @RequestParam(required=false) String code,@RequestParam(required=false) String error,
+                              jakarta.servlet.http.HttpServletResponse response) {
+        response.setHeader("Cache-Control","no-store"); response.setHeader("Referrer-Policy","no-referrer");
+        if(error!=null) return "redirect:"+yggConnect.redirect(state,"error",error);
+        if(code==null) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
+        var callback=yggConnect.callback(user,code,state);
+        if(callback.redirect()!=null) return "redirect:"+callback.redirect();
+        page(model,"yggc/callback",Map.of()); model.addAttribute("selection",callback.selection()); return "auth/ygg-select";
+    }
+    @PostMapping("/yggc/callback")
+    public String yggSelect(@AuthenticationPrincipal AccountUser user,@RequestParam("code_id") String codeId,
+                            @RequestParam String state,@RequestParam String selectedProfile) {
+        return "redirect:"+yggConnect.select(user,codeId,state,selectedProfile);
+    }
+    @GetMapping("/yggc/cancel")
+    public String yggCancelPage(Model model,@AuthenticationPrincipal AccountUser user,@RequestParam("code_id") String codeId,@RequestParam String state) {
+        page(model,"yggc/cancel",Map.of()); model.addAttribute("selection",yggConnect.show(user,codeId,state)); return "auth/ygg-select";
+    }
+    @PostMapping("/yggc/cancel")
+    public String yggCancel(@AuthenticationPrincipal AccountUser user,@RequestParam("code_id") String codeId,@RequestParam String state) {
+        return "redirect:"+yggConnect.cancel(user,codeId,state);
     }
 
     @GetMapping("/oauth/consent")

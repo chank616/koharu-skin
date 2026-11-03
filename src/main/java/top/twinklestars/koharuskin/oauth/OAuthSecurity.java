@@ -15,6 +15,14 @@ import top.twinklestars.koharuskin.site.SiteOptions;
 
 @Configuration
 public class OAuthSecurity {
+    @Bean com.nimbusds.jose.jwk.source.JWKSource<com.nimbusds.jose.proc.SecurityContext> oauthSigningKeys(top.twinklestars.koharuskin.yggdrasil.YggKeys keys) {
+        return (selector,context)->{
+            var pair=keys.pair();
+            var rsa=new com.nimbusds.jose.jwk.RSAKey.Builder((java.security.interfaces.RSAPublicKey)pair.getPublic())
+                    .privateKey(pair.getPrivate()).keyID(OAuthAuthorizations.hash(java.util.Base64.getEncoder().encodeToString(pair.getPublic().getEncoded()))).build();
+            return selector.select(new com.nimbusds.jose.jwk.JWKSet(rsa));
+        };
+    }
     @Bean AuthorizationServerSettings authorizationServerSettings(@Value("${koharu.public-url}") String publicUrl) {
         return AuthorizationServerSettings.builder().issuer(publicUrl.replaceAll("/+$",""))
                 .authorizationEndpoint("/oauth/authorize").tokenEndpoint("/oauth/token")
@@ -23,10 +31,14 @@ public class OAuthSecurity {
     @Bean @Order(3)
     SecurityFilterChain oauthAuthorization(HttpSecurity http,SecurityContextRepository contexts,HttpSessionCsrfTokenRepository csrf,
                                            AccountMapper users,SiteOptions options,@Value("${koharu.remember-key}") String key,
-                                           PlatformTransactionManager transactions) throws Exception {
+                                           PlatformTransactionManager transactions,YggConnect connect) throws Exception {
         http.oauth2AuthorizationServer(server->{
             http.securityMatcher(server.getEndpointsMatcher());
-            server.authorizationEndpoint(endpoint->endpoint.consentPage("/oauth/consent"));
+            server.authorizationEndpoint(endpoint->endpoint.consentPage("/oauth/consent").authenticationProviders(providers->providers.forEach(provider->{
+                // 原插件把 openid 用作转交外部 OIDC 服务的 OAuth 权限；保留标准回调地址与权限校验。
+                if(provider instanceof org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationProvider code)
+                    code.setAuthenticationValidator(new org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationValidator());
+            })));
             server.clientAuthentication(client->client.authenticationProviders(providers->providers.forEach(provider->{
                 if(provider instanceof org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider secret)
                     secret.setPasswordEncoder(new org.springframework.security.crypto.password.PasswordEncoder() {
@@ -43,7 +55,7 @@ public class OAuthSecurity {
                 .csrf(config->config.csrfTokenRepository(csrf))
                 .addFilterBefore(new OAuthTransactionFilter(transactions),SecurityContextHolderFilter.class)
                 .addFilterBefore(new AccountSessionFilter(users,contexts,key),LogoutFilter.class)
-                .addFilterAfter(new OAuthBrowserFilter(csrf,users,options),AccountSessionFilter.class);
+                .addFilterAfter(new OAuthBrowserFilter(csrf,users,options,connect),AccountSessionFilter.class);
         return http.build();
     }
 }

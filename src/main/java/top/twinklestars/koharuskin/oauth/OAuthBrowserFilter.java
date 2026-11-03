@@ -18,8 +18,10 @@ public class OAuthBrowserFilter extends OncePerRequestFilter {
     private final HttpSessionCsrfTokenRepository csrf;
     private final AccountMapper users;
     private final SiteOptions options;
-    public OAuthBrowserFilter(HttpSessionCsrfTokenRepository csrf,AccountMapper users,SiteOptions options) {
+    private final YggConnect connect;
+    public OAuthBrowserFilter(HttpSessionCsrfTokenRepository csrf,AccountMapper users,SiteOptions options,YggConnect connect) {
         this.csrf=csrf; this.users=users; this.options=options;
+        this.connect=connect;
     }
     public static String afterLogin(HttpSession session) {
         String target=(String)session.getAttribute("oauth.returnTo"); session.removeAttribute("oauth.returnTo");
@@ -43,6 +45,12 @@ public class OAuthBrowserFilter extends OncePerRequestFilter {
             return;
         }
         if(options.enabled("require_verification",false)&&!users.verified(user.uid())) { response.sendError(403,"请先验证邮箱"); return; }
+        if(request.getMethod().equals("GET")&&request.getParameter("scope")!=null) {
+            var scopes=new HashSet<>(Arrays.asList(request.getParameter("scope").split(" +")));
+            if(!OAuthScopes.validYgg(scopes)||(scopes.contains(OAuthScopes.SELECT)&&!connect.callbackUri().equals(request.getParameter("redirect_uri")))) {
+                response.setStatus(400); response.setContentType("application/json"); response.getWriter().write("{\"error\":\"invalid_scope\"}"); return;
+            }
+        }
         if(request.getMethod().equals("POST")) {
             var expected=csrf.loadDeferredToken(request,response).get();
             String provided=new XorCsrfTokenRequestAttributeHandler().resolveCsrfTokenValue(request,expected);

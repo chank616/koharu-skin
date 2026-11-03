@@ -21,10 +21,10 @@ import java.util.*;
 public class OAuthResourceSecurity {
     @Bean @Order(4)
     SecurityFilterChain oauthResources(HttpSecurity http,OAuthAuthorizations authorizations,AccountMapper users) throws Exception {
-        http.securityMatcher(request->request.getRequestURI().startsWith(request.getContextPath()+"/api/")
+        http.securityMatcher(request->request.getRequestURI().equals(request.getContextPath()+"/yggc/userinfo")||(request.getRequestURI().startsWith(request.getContextPath()+"/api/")
                         &&!request.getRequestURI().startsWith(request.getContextPath()+top.twinklestars.koharuskin.yggdrasil.UnionOAuth.ROOT)
                         &&!Set.of(request.getContextPath()+"/api/",request.getContextPath()+"/api/site").contains(request.getRequestURI())
-                        &&(request.getHeader("Authorization")!=null||org.springframework.web.cors.CorsUtils.isPreFlightRequest(request)))
+                        &&(request.getHeader("Authorization")!=null||org.springframework.web.cors.CorsUtils.isPreFlightRequest(request))))
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(cache->cache.disable()).csrf(csrf->csrf.disable())
                 .oauth2ResourceServer(server->server.opaqueToken(opaque->opaque.introspector(value->{
@@ -34,14 +34,18 @@ public class OAuthResourceSecurity {
                     var user=users.findById(Long.parseLong(authorization.getAttribute("koharu.uid")));
                     var authorities=new ArrayList<org.springframework.security.core.GrantedAuthority>(user.getAuthorities());
                     authorization.getAccessToken().getToken().getScopes().forEach(scope->authorities.add(new SimpleGrantedAuthority("SCOPE_"+scope)));
-                    return new DefaultOAuth2AuthenticatedPrincipal(Long.toString(user.uid()),Map.of("account",user,"sub",Long.toString(user.uid())),authorities);
-                }).authenticationConverter((token,principal)->UsernamePasswordAuthenticationToken.authenticated((AccountUser)principal.getAttribute("account"),null,principal.getAuthorities()))))
+                    return new DefaultOAuth2AuthenticatedPrincipal(Long.toString(user.uid()),Map.of("account",user,"sub",Long.toString(user.uid()),"authorizationId",authorization.getId()),authorities);
+                }).authenticationConverter((token,principal)->{
+                    var authentication=UsernamePasswordAuthenticationToken.authenticated((AccountUser)principal.getAttribute("account"),null,principal.getAuthorities());
+                    authentication.setDetails(principal.getAttribute("authorizationId")); return authentication;
+                })))
                 .cors(cors->cors.configurationSource(request->{
                     var config=new CorsConfiguration(); config.setAllowedOrigins(List.of("*"));
                     config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS")); config.setAllowedHeaders(List.of("Authorization","Content-Type")); return config;
                 }))
                 .authorizeHttpRequests(auth->{
-                    auth.requestMatchers(HttpMethod.GET,"/api/user").hasAuthority("SCOPE_User.Read")
+                    auth.requestMatchers(HttpMethod.GET,"/yggc/userinfo").hasAuthority("SCOPE_openid")
+                            .requestMatchers(HttpMethod.GET,"/api/user").hasAuthority("SCOPE_User.Read")
                             .requestMatchers("/api/user/notifications/**").hasAuthority("SCOPE_Notification.Read")
                             .requestMatchers(HttpMethod.GET,"/api/players","/api/players/**").hasAnyAuthority("SCOPE_Player.Read","SCOPE_Player.ReadWrite")
                             .requestMatchers("/api/players","/api/players/**").hasAuthority("SCOPE_Player.ReadWrite")
