@@ -57,8 +57,11 @@ public class YggProfiles {
         Set<String> domains=new LinkedHashSet<>();
         domains.add(URI.create(publicUrl).getHost());
         Arrays.stream(options.text("ygg_skin_domain","").split(",")).map(String::trim).filter(domain -> !domain.isEmpty()).forEach(domains::add);
+        if(extensions.enabled("yggdrasil-connect")) json.readTree(options.text("union_server_list","{}")).valueStream()
+                .map(server->URI.create(server.path("bs_root").asString()).getHost()).filter(Objects::nonNull).forEach(domains::add);
         var meta=new LinkedHashMap<String,Object>(Map.of("serverName",options.text("site_name","Koharu Skin"),"implementationName","Koharu Skin",
                 "implementationVersion","0.0.1","links",Map.of("homepage",publicUrl,"register",publicUrl+"/auth/register"),"feature.non_email_login",true));
+        if(options.enabled("ygg_disable_authserver",false)) meta.remove("feature.non_email_login");
         String issuer=options.text("ygg_connect_server_url","").replaceAll("/+$","");
         if(extensions.enabled("yggdrasil-connect")&&!issuer.isBlank()) meta.put("feature.openid_configuration_url",issuer+"/.well-known/openid-configuration");
         return Map.of("meta",meta,

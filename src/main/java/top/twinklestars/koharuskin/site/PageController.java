@@ -326,8 +326,7 @@ public class PageController {
     }
 
     @GetMapping("/")
-    public String home(Model model,@AuthenticationPrincipal AccountUser user,jakarta.servlet.http.HttpServletResponse response) {
-        if (extensions.enabled("yggdrasil-api")) response.setHeader("X-Authlib-Injector-API-Location",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
+    public String home(Model model,@AuthenticationPrincipal AccountUser user) {
         var home=presentation.home();
         page(model,"/",Map.of("transparent_navbar",home.transparent()));
         model.addAttribute("home",home); model.addAttribute("loggedIn",user!=null);
@@ -345,9 +344,10 @@ public class PageController {
 
     @GetMapping("/user")
     public String user(Model model, @AuthenticationPrincipal AccountUser user) {
-        if (extensions.enabled("yggdrasil-api") && options.enabled("ygg_show_config_section",true)) {
+        if ((extensions.enabled("yggdrasil-api")||extensions.enabled("yggdrasil-connect")) && options.enabled("ygg_show_config_section",true)) {
             model.addAttribute("yggUrl",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
         }
+        model.addAttribute("yggPasswordLogin",!options.enabled("ygg_disable_authserver",false));
         page(model, "user", Map.of("unverified", options.enabled("require_verification", false) && !accounts.verified(user.uid())));
         model.addAttribute("account", Map.of("uid", user.uid(), "nickname", user.nickname(), "email", user.email()));
         model.addAttribute("admin", user.permission()>=1);

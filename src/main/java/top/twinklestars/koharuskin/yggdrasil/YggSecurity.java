@@ -11,6 +11,18 @@ import java.util.List;
 
 @Configuration
 public class YggSecurity {
+    @Bean
+    org.springframework.boot.web.servlet.FilterRegistrationBean<jakarta.servlet.Filter> authlibLocation(
+            top.twinklestars.koharuskin.extension.OfficialExtensions extensions,top.twinklestars.koharuskin.site.SiteOptions options,
+            @org.springframework.beans.factory.annotation.Value("${koharu.public-url}") String publicUrl) {
+        jakarta.servlet.Filter filter=(request,response,chain)->{
+            if(options.enabled("ygg_enable_ali",true)&&(extensions.enabled("yggdrasil-api")||extensions.enabled("yggdrasil-connect")))
+                ((jakarta.servlet.http.HttpServletResponse)response).setHeader("X-Authlib-Injector-API-Location",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
+            chain.doFilter(request,response);
+        };
+        var registration=new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
+        registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+60);return registration;
+    }
     @Bean @Order(0)
     SecurityFilterChain unionMemberSecurity(HttpSecurity http) throws Exception {
         return http.securityMatcher(request->{

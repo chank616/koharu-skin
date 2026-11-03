@@ -33,7 +33,8 @@ public class AdminSettings {
             case "resource" -> List.of(new Group("resources","静态资源 CDN",List.of(
                     new Field("cdn_address","CDN 根地址（留空使用本站，CDN 需提供 app 目录及跨域资源访问）","text",""))));
             case "extensions" -> List.of(
-                    new Group("ygg-connect","OIDC 角色授权",List.of(new Field("ygg_connect_server_url","OIDC 服务根地址（留空表示未配置）","text",""))),
+                    new Group("ygg-connect","OIDC 角色授权",List.of(new Field("ygg_connect_server_url","OIDC 服务根地址（留空表示未配置）","text",""),
+                            new Field("ygg_disable_authserver","关闭传统 authserver 接口，使用 OIDC 授权登录（进服验证不受影响）","checkbox","false"))),
                     new Group("union","联合认证",List.of(
                             new Field("union_api_root","联盟 API 根地址","text",""),
                             new Field("union_member_key","成员密钥（留空保留现有密钥）","password",""),
@@ -49,6 +50,7 @@ public class AdminSettings {
                             new Field("ygg_skin_domain","额外材质域名（逗号分隔）","text",""),
                             new Field("ygg_search_profile_max","一次查询角色数量上限","number","5"),
                             new Field("ygg_restore_api","启用 Restore API（为调用方提交的材质值签名，配合修改版 MultiLogin 使用）","checkbox","false"),
+                            new Field("ygg_enable_ali","允许启动器从本站地址自动发现认证接口","checkbox","true"),
                             new Field("ygg_show_config_section","在用户中心显示外置登录地址","checkbox","true"))),
                     new Group("restricted-email-domains","邮箱域名限制",List.of(
                             new Field("restricted-email-domains.allow","允许的域名（每行一个，留空允许所有域名）","textarea","[]"),

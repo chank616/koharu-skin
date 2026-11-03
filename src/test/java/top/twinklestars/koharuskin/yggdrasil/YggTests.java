@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class YggTests {
+    @Autowired top.twinklestars.koharuskin.account.AccountMapper accounts;
     static final String ROOT="/api/yggdrasil";
     static final String ONE="11111111111141118111111111111111";
     static final String TWO="22222222222242228222222222222222";
@@ -89,6 +90,40 @@ class YggTests {
         assertThat(jdbc.queryForObject("SELECT token_hash FROM koharu_ygg_tokens WHERE player_pid=101",String.class)).isNotEqualTo(token(named));
         mvc.perform(post(ROOT+"/authserver/authenticate").contentType("application/json").content("{\"username\":\"PlayerOne\",\"password\":\"wrong\"}"))
                 .andExpect(status().isForbidden()).andExpect(jsonPath("$.error").value("ForbiddenOperationException"));
+    }
+
+    @Test void disablingTraditionalAuthKeepsSessionVerificationAndProfilesAvailable() throws Exception {
+        String access=token(login("playerone"));
+        var encoded=java.net.URI.create(ROOT+"/%61uthserver/authenticate");
+        String credentials="{\"username\":\"PlayerOne\",\"password\":\"test-password\"}";
+        mvc.perform(post(encoded).contentType("application/json").content(credentials)).andExpect(status().isOk());
+        options.insert("ygg_disable_authserver","true");
+        mvc.perform(post(encoded).contentType("application/json").content(credentials)).andExpect(status().isForbidden());
+        for(String endpoint:List.of("authenticate","signout","refresh","validate","invalidate"))
+            postJson("/authserver/"+endpoint,Map.of("username","playerone","password","test-password","accessToken",access))
+                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.errorMessage").value("Traditional authentication is disabled. Use OpenID Connect to sign in."));
+        mvc.perform(get(ROOT)).andExpect(status().isOk()).andExpect(jsonPath("$.meta['feature.non_email_login']").doesNotExist());
+        postJson("/sessionserver/session/minecraft/join",Map.of("accessToken",access,"selectedProfile",ONE,"serverId","oidc-only-mode")).andExpect(status().isNoContent());
+        mvc.perform(get(ROOT+"/sessionserver/session/minecraft/hasJoined").param("username","PlayerOne").param("serverId","oidc-only-mode"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(ONE));
+        options.update("ygg_disable_authserver","false");postJson("/authserver/validate",Map.of("accessToken",access)).andExpect(status().isNoContent());
+    }
+
+    @Test void launcherDiscoveryAndUnionTextureDomainsFollowEnabledExtensions() throws Exception {
+        options.insert("ygg_enable_ali","false");
+        mvc.perform(get("/")).andExpect(header().doesNotExist("X-Authlib-Injector-API-Location"));
+        options.update("ygg_enable_ali","true");
+        mvc.perform(get("/")).andExpect(header().string("X-Authlib-Injector-API-Location",org.hamcrest.Matchers.endsWith("/api/yggdrasil/")));
+        options.update("plugins_enabled","[\"yggdrasil-connect\"]");
+        options.insert("union_server_list","[{\"code\":\"ONE\",\"bs_root\":\"https://textures.example.invalid/skin\"},{\"code\":\"TWO\",\"bs_root\":\"https://textures.example.invalid\"}]");
+        options.insert("ygg_disable_authserver","true");
+        mvc.perform(get(ROOT)).andExpect(status().isOk()).andExpect(jsonPath("$.skinDomains",org.hamcrest.Matchers.hasItem("textures.example.invalid")))
+                .andExpect(jsonPath("$.skinDomains.length()").value(2));
+        var page=mvc.perform(get("/user").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(
+                accounts.findById(1))))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(page.getResponse().getContentAsString()).contains("认证服务器地址","OIDC 授权的启动器").doesNotContain("使用本站邮箱或角色名及密码登录");
+        options.update("plugins_enabled","[]");mvc.perform(get("/")).andExpect(header().doesNotExist("X-Authlib-Injector-API-Location"));
     }
 
     @Test void refreshSelectsOnlyOwnedProfilesAndAtomicallyRevokesOldToken() throws Exception {

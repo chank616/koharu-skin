@@ -39,8 +39,11 @@ public class YggController {
         this.keys=keys;
     }
 
-    @ModelAttribute public void enabled() {
+    @ModelAttribute public void enabled(HttpServletRequest request) {
         if (!extensions.enabled("yggdrasil-api")&&!extensions.enabled("yggdrasil-connect")) throw new YggException(404,"Not Found","External authentication is disabled.");
+        String route=(String)request.getAttribute(org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        if(route.startsWith("/api/yggdrasil/authserver/")&&options.enabled("ygg_disable_authserver",false))
+            throw YggException.forbidden("Traditional authentication is disabled. Use OpenID Connect to sign in.");
     }
 
     @GetMapping({"","/"}) public Map<String,Object> metadata() { return profiles.metadata(); }
