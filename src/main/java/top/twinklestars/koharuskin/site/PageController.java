@@ -50,6 +50,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.account.JsonRememberMeServices remember;
     private final top.twinklestars.koharuskin.yggdrasil.UnionMember union;
     private final top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles;
+    private final top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -67,7 +68,8 @@ public class PageController {
                           org.springframework.security.web.context.SecurityContextRepository contexts,
                           top.twinklestars.koharuskin.account.JsonRememberMeServices remember,
                           top.twinklestars.koharuskin.yggdrasil.UnionMember union,
-                          top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles) throws IOException {
+                          top.twinklestars.koharuskin.yggdrasil.UnionProfiles unionProfiles,
+                          top.twinklestars.koharuskin.yggdrasil.UnionBlacklist unionBlacklist) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -91,6 +93,7 @@ public class PageController {
         this.remember=remember;
         this.union=union;
         this.unionProfiles=unionProfiles;
+        this.unionBlacklist=unionBlacklist;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -119,6 +122,17 @@ public class PageController {
         else try { model.addAttribute("unionProfiles",unionProfiles.profiles(user.uid())); }
         catch(org.springframework.web.server.ResponseStatusException error) { model.addAttribute("unionError",error.getReason()); }
         return "user/union";
+    }
+
+    @GetMapping("/admin/union/view/blacklist")
+    public String unionBlacklist(Model model,@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="1") int page) {
+        union.requireEnabled();
+        page(model,"admin/union/view/blacklist",Map.of());
+        model.addAttribute("query",q); model.addAttribute("unionNetworkEnabled",union.networkEnabled());
+        if(!model.containsAttribute("blacklistForm")) model.addAttribute("blacklistForm",new top.twinklestars.koharuskin.yggdrasil.UnionBlacklistController.Create("",""));
+        try { model.addAttribute("blacklist",unionBlacklist.page(q,page)); }
+        catch(org.springframework.web.server.ResponseStatusException error) { model.addAttribute("listError",error.getReason()); }
+        return "admin/union-blacklist";
     }
 
     @GetMapping("/user/oauth/manage")

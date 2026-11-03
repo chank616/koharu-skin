@@ -52,6 +52,7 @@
                 <p th:unless="${unionEnabled}">请先在官方扩展中启用联合认证。</p>
                 <p th:if="${unionMessage}" th:text="${unionMessage}" class="alert alert-success"></p>
                 <p>更新签名密钥会使用联盟提供的私钥；同步角色会向联盟提交本站角色名和 UUID。</p>
+                <p th:if="${unionEnabled}"><a th:href="@{/admin/union/view/blacklist}">管理联盟黑名单</a></p>
                 <div class="d-flex flex-wrap">
                     <form class="mr-2 mb-2" method="post" th:action="@{/admin/union/member/updatelist}"><button class="btn btn-primary" th:disabled="${!unionNetworkEnabled or !unionEnabled}">更新成员列表</button></form>
                     <form class="mr-2 mb-2" method="post" th:action="@{/admin/union/member/updateprivatekey}"><button class="btn btn-warning" th:disabled="${!unionNetworkEnabled or !unionEnabled}">更新签名密钥</button></form>

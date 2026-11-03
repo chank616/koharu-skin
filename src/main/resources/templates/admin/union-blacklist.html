@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head('联盟黑名单')}"></head>
+<body class="hold-transition layout-top-nav" th:classappend="${darkMode} ? 'dark-mode'">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand" th:classappend="${siteAssets.navbar}"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a><a th:href="@{/admin}" class="nav-link">后台首页</a>
+        <a th:href="@{/admin/extensions/config#union}" class="nav-link">联盟配置</a><a th:href="@{/union}" class="nav-link">联合认证</a>
+        <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
+    </div></nav>
+    <div class="content-wrapper"><section class="content pt-4"><div class="container">
+        <h1 class="h3 mb-3">联盟黑名单</h1>
+        <p>这里的操作会提交给联盟，影响参与联合黑名单的成员站点。添加前请按联盟规则核实原因。</p>
+        <div class="alert alert-warning" th:unless="${unionNetworkEnabled}">当前环境已关闭联盟网络连接。</div>
+        <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+        <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+        <form class="card" method="post" th:action="@{/admin/union/blacklist/create}">
+            <div class="card-header"><h2 class="card-title">添加记录</h2></div>
+            <div class="card-body">
+                <div class="form-group"><label for="blacklist-email">邮箱</label><input class="form-control" type="email" name="email" id="blacklist-email" required th:value="${blacklistForm.email}"></div>
+                <div class="form-group"><label for="blacklist-reason">原因</label><textarea class="form-control" name="reason" id="blacklist-reason" required rows="3" th:text="${blacklistForm.reason}"></textarea></div>
+            </div><div class="card-footer"><button class="btn btn-primary" th:disabled="${!unionNetworkEnabled}">添加到联盟黑名单</button></div>
+        </form>
+        <div class="card"><div class="card-header">
+            <form class="input-group" method="get" th:action="@{/admin/union/view/blacklist}"><input class="form-control" name="q" th:value="${query}" aria-label="搜索黑名单" placeholder="邮箱或关键词"><div class="input-group-append"><button class="btn btn-primary">搜索</button></div></form>
+            <p class="mt-2 mb-0">搜索邮箱时可以加英文双引号。释放会移出有效黑名单并保留历史记录；删除会从联盟中移除记录。</p>
+        </div>
+        <div class="card-body" th:if="${listError}" th:text="${listError}"></div>
+        <th:block th:if="${blacklist != null}">
+            <div class="card-body table-responsive p-0"><table class="table table-striped"><thead><tr><th>ID</th><th>邮箱</th><th>来源</th><th>原因</th><th>创建时间</th><th>截止时间</th><th>操作</th></tr></thead><tbody>
+                <tr th:each="entry : ${blacklist.entries}"><td th:text="${entry.id}"></td><td th:text="${entry.email}"></td><td th:text="${entry.source}"></td><td th:text="${entry.reason}"></td><td th:text="${entry.createdAt}"></td><td th:text="${entry.validUntil}"></td>
+                    <td><form method="post" th:action="@{/admin/union/blacklist/invalidate/{id}(id=${entry.id})}" onsubmit="return confirm('确认释放此记录？')" class="mb-2"><button class="btn btn-outline-secondary btn-sm" th:disabled="${!unionNetworkEnabled}">释放</button></form><form method="post" th:action="@{/admin/union/blacklist/delete/{id}(id=${entry.id})}" onsubmit="return confirm('确认从联盟删除此记录？')"><button class="btn btn-outline-danger btn-sm" th:disabled="${!unionNetworkEnabled}">删除</button></form></td></tr>
+                <tr th:if="${#lists.isEmpty(blacklist.entries)}"><td colspan="7" class="text-center">没有符合条件的记录。</td></tr>
+            </tbody></table></div>
+            <div class="card-footer d-flex justify-content-end align-items-center"><span class="mr-auto" th:text="${'共 '+blacklist.total+' 条'}"></span>
+                <a class="btn btn-default" th:if="${blacklist.currentPage>1}" th:href="@{/admin/union/view/blacklist(q=${query},page=${blacklist.currentPage-1})}">上一页</a>
+                <span class="mx-3" th:text="${blacklist.currentPage+' / '+blacklist.lastPage}"></span>
+                <a class="btn btn-default" th:if="${blacklist.currentPage<blacklist.lastPage}" th:href="@{/admin/union/view/blacklist(q=${query},page=${blacklist.currentPage+1})}">下一页</a>
+            </div>
+        </th:block></div>
+    </div></section></div>
+</div><th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body></html>

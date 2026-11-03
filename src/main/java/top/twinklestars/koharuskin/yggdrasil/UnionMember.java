@@ -52,6 +52,9 @@ public class UnionMember {
         if(data!=null) builder.header("Content-Type","application/json");
         try {
             var response=http.send(builder.build(),HttpResponse.BodyHandlers.ofString());
+            if(response.statusCode()>=400&&response.statusCode()<500)
+                throw new ResponseStatusException(org.springframework.http.HttpStatusCode.valueOf(response.statusCode()),
+                        json.readTree(response.body()).path("message").asString("联盟拒绝了请求"));
             if(response.statusCode()<200||response.statusCode()>=300) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"联盟服务请求失败");
             return response.body().isBlank()?json.createObjectNode():json.readTree(response.body());
         } catch(IOException|tools.jackson.core.JacksonException error) { throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"联盟服务不可用"); }
@@ -77,6 +80,7 @@ public class UnionMember {
     public Map<String,Object> hello() {
         requireEnabled();
         var features=new ArrayList<String>();
+        features.add("unionBlacklist");
         if(options.enabled("require_verification",false)) features.add("emailVerification");
         if(options.enabled("union_enable_oauth2",false)) features.add("unionOAuth2");
         return Map.of("yggdrasilApiVersion","0.0.1","serverListVersion",options.text("union_server_list_version","0"),
