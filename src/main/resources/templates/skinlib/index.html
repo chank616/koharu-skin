@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/assets :: head(${title})}"></head>
+<body class="hold-transition layout-top-nav">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light"><div class="container">
+        <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
+        <a th:href="@{/skinlib}" class="nav-link">皮肤库</a><a th:href="@{/user/closet}" class="nav-link">我的衣柜</a>
+        <a th:href="@{/user}" class="nav-link">用户中心</a>
+    </div></nav>
+    <div class="content-wrapper">
+        <section th:if="${section != 'library'}" class="content pt-4"><div class="container">
+            <h1 class="h3 mb-3" th:text="${title}"></h1>
+            <div th:if="${section == 'upload'}" class="row"><div class="col-md-6" id="file-input"></div><div class="col-md-6" id="previewer"></div></div>
+            <div th:if="${section == 'show'}" class="row"><div class="col-md-8" id="previewer"></div><div class="col-md-4" id="side"></div></div>
+        </div></section>
+    </div>
+</div>
+<th:block th:replace="~{fragments/assets :: scripts}"></th:block>
+</body>
+</html>

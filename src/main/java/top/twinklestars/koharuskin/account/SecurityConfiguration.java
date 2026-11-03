@@ -56,6 +56,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/auth/**", "/app/**", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/*", "/avatar/*").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/skinlib", "/skinlib/list", "/skinlib/show/*").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
                 .securityContext(context -> context.securityContextRepository(contexts))

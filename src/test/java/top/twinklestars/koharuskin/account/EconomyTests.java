@@ -46,10 +46,12 @@ class EconomyTests {
         assertThatThrownBy(() -> closet.add(owner,1,"Duplicate")).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> closet.add(owner,2,"Private")).isInstanceOf(BusinessException.class);
         assertThat(users.score(1)).isEqualTo(990);
+        jdbc.update("INSERT INTO players(uid,name,tid_skin,tid_cape,last_modified) VALUES(1,'AppliedSkin',1,0,CURRENT_TIMESTAMP)");
         closet.remove(1,1);
         assertThat(users.score(1)).isEqualTo(1000);
         assertThat(users.score(2)).isEqualTo(1000);
         assertThat(jdbc.queryForObject("SELECT likes FROM textures WHERE tid=1", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT tid_skin FROM players WHERE uid=1", Integer.class)).isZero();
         assertThatThrownBy(() -> closet.remove(1,1)).isInstanceOf(BusinessException.class);
         assertThat(users.score(1)).isEqualTo(1000);
     }

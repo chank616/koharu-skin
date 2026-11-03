@@ -11,6 +11,9 @@ import top.twinklestars.koharuskin.account.AccountUser;
 import top.twinklestars.koharuskin.account.LoginAttempts;
 import top.twinklestars.koharuskin.player.PlayerMapper;
 import top.twinklestars.koharuskin.player.PlayerService;
+import top.twinklestars.koharuskin.texture.TextureService;
+import top.twinklestars.koharuskin.account.AccountMapper;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.IOException;
 import java.util.Map;
@@ -22,12 +25,17 @@ public class PageController {
     private final SiteOptions options;
     private final PlayerMapper players;
     private final PlayerService playerService;
+    private final TextureService textures;
+    private final AccountMapper accounts;
 
-    public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService) throws IOException {
+    public PageController(LoginAttempts attempts, SiteOptions options, PlayerMapper players, PlayerService playerService,
+                          TextureService textures, AccountMapper accounts) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
         this.playerService = playerService;
+        this.textures = textures;
+        this.accounts = accounts;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -83,5 +91,40 @@ public class PageController {
                 "rule", "命名规则：" + options.text("player_name_rule", "official"),
                 "length", "长度：" + options.number("player_name_length_min", 3) + "～" + options.number("player_name_length_max", 16)));
         return "user/closet";
+    }
+
+    @GetMapping("/skinlib")
+    public String library(Model model, @AuthenticationPrincipal AccountUser user) {
+        page(model, "skinlib", Map.of("currentUid", user == null ? 0 : user.uid()));
+        model.addAttribute("section", "library");
+        model.addAttribute("title", "皮肤库");
+        return "skinlib/index";
+    }
+
+    @GetMapping("/skinlib/show/{tid}")
+    public String texture(Model model, @PathVariable int tid, @AuthenticationPrincipal AccountUser user) {
+        var texture = textures.readable(tid, user);
+        var uploader = accounts.findById(texture.uploader());
+        page(model, "skinlib/show/" + tid, Map.of("download", options.enabled("allow_downloading_texture", true),
+                "currentUid", user == null ? 0 : user.uid(), "admin", user != null && user.permission() >= 1,
+                "inCloset", user != null && players.inCloset(user.uid(), tid) > 0, "uploaderExists", uploader != null,
+                "nickname", uploader == null ? "已注销用户" : uploader.nickname(), "report", options.number("reporter_score_modification", 0),
+                "badges", java.util.List.of()));
+        model.addAttribute("section", "show");
+        model.addAttribute("title", texture.name());
+        return "skinlib/index";
+    }
+
+    @GetMapping("/skinlib/upload")
+    public String upload(Model model, @AuthenticationPrincipal AccountUser user) {
+        playerService.requireVerified(user.uid());
+        page(model, "skinlib/upload", Map.of("rule", options.text("texture_name_regexp", "请输入材质名称"),
+                "privacyNotice", "私密材质仅自己可在皮肤库中查看", "score", players.score(user.uid()),
+                "scorePublic", options.number("score_per_storage", 1), "scorePrivate", options.number("private_score_per_storage", 10),
+                "closetItemCost", options.number("score_per_closet_item", 0), "award", options.number("score_award_per_texture", 0),
+                "contentPolicy", options.text("content_policy", "")));
+        model.addAttribute("section", "upload");
+        model.addAttribute("title", "上传材质");
+        return "skinlib/index";
     }
 }

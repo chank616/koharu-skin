@@ -25,4 +25,10 @@ public interface ClosetMapper {
     int remove(long uid, int tid);
     @Update("UPDATE textures SET likes=GREATEST(0,likes+#{amount}) WHERE tid=#{tid}")
     void likes(int tid, int amount);
+    @Update("""
+            UPDATE players SET tid_skin=CASE WHEN tid_skin=#{tid} THEN 0 ELSE tid_skin END,
+            tid_cape=CASE WHEN tid_cape=#{tid} THEN 0 ELSE tid_cape END,last_modified=CURRENT_TIMESTAMP
+            WHERE uid=#{uid} AND (tid_skin=#{tid} OR tid_cape=#{tid})
+            """)
+    void clearPlayerTextures(long uid, int tid);
 }

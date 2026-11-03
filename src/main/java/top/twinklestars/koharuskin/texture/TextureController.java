@@ -17,6 +17,8 @@ import javax.imageio.ImageIO;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import top.twinklestars.koharuskin.account.AccountUser;
 
 @RestController
 public class TextureController {
@@ -30,7 +32,15 @@ public class TextureController {
     }
 
     @GetMapping({"/skinlib/info/{tid}", "/texture/{tid}"})
-    public Texture info(@PathVariable int tid) {
+    public Texture info(@PathVariable int tid, @AuthenticationPrincipal AccountUser user) {
+        Texture texture = find(tid);
+        if (!texture.visible() && (user == null || (user.uid() != texture.uploader() && user.permission() < 1))) {
+            throw new ResponseStatusException(options.number("status_code_for_private", 403) == 404 ? HttpStatus.NOT_FOUND : HttpStatus.FORBIDDEN);
+        }
+        return texture;
+    }
+
+    private Texture find(int tid) {
         Texture texture = textures.find(tid);
         if (texture == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "材质不存在");
         return texture;
@@ -48,12 +58,12 @@ public class TextureController {
     @GetMapping("/raw/{tid}")
     public ResponseEntity<Resource> raw(@PathVariable int tid) throws IOException {
         if (!options.enabled("allow_downloading_texture", true)) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        return file(info(tid).hash());
+        return file(find(tid).hash());
     }
 
     @GetMapping(value = "/preview/{tid}", produces = MediaType.IMAGE_PNG_VALUE)
     public byte[] preview(@PathVariable int tid, @RequestParam(defaultValue = "200") @Min(16) @Max(1024) int height) throws IOException {
-        Texture texture = info(tid);
+        Texture texture = find(tid);
         var skin = ImageIO.read(directory.resolve(texture.hash()).toFile());
         return png(SkinImages.preview(skin, texture.type(), height));
     }

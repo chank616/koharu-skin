@@ -40,6 +40,7 @@ public class ClosetService {
         users.lockScore(uid);
         int removed = closet.remove(uid, tid);
         if (removed == 0) throw new BusinessException("衣柜里没有此材质");
+        closet.clearPlayerTextures(uid, tid);
         if (options.enabled("return_score", true)) users.changeScore(uid, options.number("score_per_closet_item", 0));
         var texture = textures.find(tid);
         if (texture != null) {
