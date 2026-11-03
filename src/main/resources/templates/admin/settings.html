@@ -7,6 +7,7 @@
         <a th:href="@{/user}" class="navbar-brand" th:text="${siteName}"></a>
         <a th:href="@{/admin}" class="nav-link">后台首页</a><a th:href="@{/admin/users}" class="nav-link">用户管理</a><a th:href="@{/admin/players}" class="nav-link">角色管理</a>
         <a th:href="@{/admin/options}" class="nav-link">站点设置</a><a th:href="@{/admin/score}" class="nav-link">积分设置</a>
+        <a th:href="@{/admin/customize}" class="nav-link">外观设置</a>
         <a th:href="@{/admin/extensions}" class="nav-link">官方扩展</a>
         <th:block th:replace="~{fragments/notifications :: bell}"></th:block><button id="logout-button" class="btn btn-outline-secondary ml-auto">退出登录</button>
     </div></nav>

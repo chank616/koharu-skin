@@ -43,6 +43,7 @@ public class PageController {
     private final top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer;
     private final top.twinklestars.koharuskin.extension.henan.HenanLogin henan;
     private final top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent;
+    private final SitePresentation presentation;
     @org.springframework.beans.factory.annotation.Value("${koharu.public-url}")
     private String publicUrl;
 
@@ -54,7 +55,7 @@ public class PageController {
                           top.twinklestars.koharuskin.admin.AdminDashboard dashboard,
                           top.twinklestars.koharuskin.extension.XiqueerVerification xiqueer,
                           top.twinklestars.koharuskin.extension.henan.HenanLogin henan,
-                          top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent) throws IOException {
+                          top.twinklestars.koharuskin.oauth.OAuthConsentPage oauthConsent,SitePresentation presentation) throws IOException {
         this.attempts = attempts;
         this.options = options;
         this.players = players;
@@ -71,6 +72,7 @@ public class PageController {
         this.xiqueer = xiqueer;
         this.henan = henan;
         this.oauthConsent=oauthConsent;
+        this.presentation=presentation;
         try (var input = new ClassPathResource("i18n/zh_CN/front-end.yml").getInputStream()) {
             translations = new Yaml().load(input);
         }
@@ -82,6 +84,8 @@ public class PageController {
         model.addAttribute("notifications",user==null?null:notifications.unreadJson(user.uid()));
         model.addAttribute("xiqueerEnabled",user!=null&&extensions.enabled("xiqueer-verification"));
         model.addAttribute("henanEnabled",extensions.enabled("auth-henan"));
+        model.addAttribute("hitokotoEnabled",extensions.enabled("hitokoto"));
+        model.addAttribute("favicon",presentation.favicon());
     }
 
     @GetMapping("/user/oauth/manage")
@@ -151,17 +155,17 @@ public class PageController {
         return "admin/management";
     }
 
-    @GetMapping("/admin/{section:options|score}")
+    @GetMapping("/admin/{section:options|score|customize}")
     public String settings(Model model,@PathVariable String section) {
         page(model,"admin/"+(section.equals("extensions")?"extensions/config":section),Map.of());
-        model.addAttribute("title",switch(section){case "options"->"站点设置";case "score"->"积分设置";default->"官方扩展配置";});
+        model.addAttribute("title",switch(section){case "options"->"站点设置";case "score"->"积分设置";case "customize"->"外观设置";default->"官方扩展配置";});
         model.addAttribute("section",section.equals("extensions")?"extensions/config":section);
         model.addAttribute("groups",settings.groups(section));
         model.addAttribute("values",settings.values(section));
         return "admin/settings";
     }
 
-    @PostMapping("/admin/{section:options|score}")
+    @PostMapping("/admin/{section:options|score|customize}")
     public String saveSettings(Model model,@PathVariable String section,@RequestParam String option,@RequestParam Map<String,String> values) {
         try { settings.save(section,option,values); }
         catch(BusinessException error) {
@@ -230,9 +234,12 @@ public class PageController {
     }
 
     @GetMapping("/")
-    public String home(jakarta.servlet.http.HttpServletResponse response) {
+    public String home(Model model,@AuthenticationPrincipal AccountUser user,jakarta.servlet.http.HttpServletResponse response) {
         if (extensions.enabled("yggdrasil-api")) response.setHeader("X-Authlib-Injector-API-Location",publicUrl.replaceAll("/+$","")+"/api/yggdrasil/");
-        return "redirect:/user";
+        var home=presentation.home();
+        page(model,"/",Map.of("transparent_navbar",home.transparent()));
+        model.addAttribute("home",home); model.addAttribute("loggedIn",user!=null);
+        return "home";
     }
 
     @GetMapping("/auth/login")
@@ -251,15 +258,16 @@ public class PageController {
         page(model, "user", Map.of("unverified", options.enabled("require_verification", false) && !accounts.verified(user.uid())));
         model.addAttribute("account", Map.of("uid", user.uid(), "nickname", user.nickname(), "email", user.email()));
         model.addAttribute("admin", user.permission()>=1);
+        model.addAttribute("announcement",presentation.announcement());
         model.addAttribute("rates", Map.of("角色", options.number("score_per_player", 100), "公开材质 / KB", options.number("score_per_storage", 1),
                 "私密材质 / KB", options.number("private_score_per_storage", 10), "衣柜收藏", options.number("score_per_closet_item", 0)));
         return "user/index";
     }
 
     private void page(Model model, String route, Map<String, Object> extra) {
-        String siteName=options.text("site_name","Koharu Skin");
+        String siteName=options.localized("site_name","Koharu Skin");
         model.addAttribute("siteName", siteName);
-        model.addAttribute("siteDescription",options.text("site_description",""));
+        model.addAttribute("siteDescription",options.localized("site_description",""));
         model.addAttribute("blessing", Map.of("base_url", "", "route", route, "site_name", siteName,
                 "locale", "zh_CN", "version", "0.0.1", "debug", false, "env", "production", "i18n", translations));
         model.addAttribute("extra", extra);

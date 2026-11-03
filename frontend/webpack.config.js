@@ -4,6 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 
 module.exports = {
   entry: {
+    home: ['./src/styles/home.css', './src/scripts/homePage.ts'],
     app: ['react-hot-loader/patch', './src/index.tsx'],
     style: [
       './src/styles/common.css',

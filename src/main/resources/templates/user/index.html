@@ -23,6 +23,7 @@
             <span>用户 ID：</span><span th:text="${account.uid}"></span>
         </div></div>
         <div id="usage-box"></div>
+        <section class="card" th:if="${announcement != ''}" id="announcement"><div class="card-header"><h2 class="card-title">站点公告</h2></div><div class="card-body" th:utext="${announcement}"></div></section>
         <div id="email-verification"></div>
         <p th:if="${xiqueerEnabled and extra.unverified}"><a th:href="@{/user/xiqueer-verification}">使用喜鹊儿 APP 扫码验证学生邮箱</a></p>
         <div class="card" th:if="${yggUrl != null}"><div class="card-header"><h2 class="card-title">启动器外置登录</h2></div><div class="card-body">

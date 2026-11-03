@@ -18,6 +18,14 @@ public class AdminSettings {
 
     public List<Group> groups(String page) {
         return switch(page) {
+            case "customize" -> List.of(new Group("homepage","首页与页脚",List.of(
+                    new Field("home_pic_url","首页背景图片地址","text","/official/site/bg.webp"),
+                    new Field("favicon_url","站点图标地址","text","/official/site/favicon.ico"),
+                    new Field("transparent_navbar","首页导航栏透明","checkbox","false"),
+                    new Field("hide_intro","隐藏首页功能介绍","checkbox","false"),
+                    new Field("fixed_bg","固定首页背景","checkbox","false"),
+                    new Field("copyright_prefer","驱动说明样式（0～6）","number","0"),
+                    new Field("copyright_text","页脚内容（支持 HTML，以及 {year}、{site_name}、{site_url}）","textarea","Copyright &copy; {year} {site_name}."))));
             case "extensions" -> List.of(
                     new Group("skin-api-extension","皮肤 API 扩展",List.of(
                             new Field("skin_api_tokens","API 令牌（至少 16 字符，多个用逗号分隔；留空保留现有令牌）","password",""))),
@@ -48,7 +56,8 @@ public class AdminSettings {
                     new Field("allow_downloading_texture","允许下载材质","checkbox","true"),
                     new Field("status_code_for_private","私密材质访问状态码","status","403"),
                     new Field("texture_name_regexp","材质名称正则","text",""),
-                    new Field("content_policy","上传内容规范","textarea",""))));
+                    new Field("content_policy","上传内容规范","textarea",""))),
+                    new Group("announ","用户中心公告",List.of(new Field("announcement","公告（支持 Markdown、HTML 和 {version}）","textarea","欢迎使用 Koharu Skin {version}！"))));
             case "score" -> List.of(
                     new Group("rate","积分消耗",List.of(
                             new Field("score_per_storage","公开材质每 KB 消耗","number","1"),
@@ -76,7 +85,7 @@ public class AdminSettings {
     public Map<String,String> values(String page) {
         var values=new LinkedHashMap<String,String>();
         for(var group:groups(page)) for(var field:group.fields()) {
-            String value=options.text(field.key(),field.fallback());
+            String value=localizedField(field.key())?options.localized(field.key(),field.fallback()):options.text(field.key(),field.fallback());
             if(field.type().equals("password")) value="";
             if(field.key().startsWith("restricted-email-domains.")) value=String.join("\n",json.readTree(value).valueStream().map(item->item.asString()).toList());
             if(field.type().equals("number")) value=switch(value){case "true"->"1";case "false"->"0";default->value;};
@@ -142,9 +151,15 @@ public class AdminSettings {
                 values.put("skin_api_tokens",String.join(",",list));
             }
         }
+        if(groupKey.equals("homepage")&&Integer.parseInt(values.get("copyright_prefer"))>6)
+            throw new BusinessException("驱动说明样式应为 0～6");
         options.lockRegistration();
         values.forEach((key,value)-> { if(options.get(key)==null) options.insert(key,value); else options.update(key,value); });
+        values.forEach((key,value)-> { if(localizedField(key)) { String localized=key+"_zh_CN";
+            if(options.get(localized)==null) options.insert(localized,value); else options.update(localized,value); } });
     }
+
+    private boolean localizedField(String key) { return Set.of("site_name","site_description","content_policy","announcement","copyright_text","copyright_prefer").contains(key); }
 
     private void validateRegex(String regex) {
         if(regex.startsWith("/")&&regex.lastIndexOf('/')>0) regex=regex.substring(1,regex.lastIndexOf('/'));
