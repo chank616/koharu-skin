@@ -59,7 +59,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/bind").authenticated()
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/union/member/oauth2","/api/union/member/oauth2/").permitAll()
-                .requestMatchers("/", "/auth/**", "/app/**", "/api", "/api/", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
+                .requestMatchers("/", "/setup", "/setup/**", "/auth/**", "/app/**", "/api", "/api/", "/api/site", "/error", "/textures/**", "/csl/textures/**", "/raw/**", "/skinlib/info/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/texture/*", "/preview/**", "/avatar/**", "/*.json", "/csl/*.json", "/official/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.HEAD, "/*.json", "/csl/*.json", "/official/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/skinlib", "/skinlib/list", "/skinlib/show/*").permitAll()

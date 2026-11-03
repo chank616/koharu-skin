@@ -21,7 +21,7 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:db/yggdrasil.sql,classpath:db/oauth.sql
+      schema-locations: classpath:db/base.sql,classpath:db/yggdrasil.sql,classpath:db/oauth.sql
   mail:
     properties:
       mail.smtp.connectiontimeout: 5000

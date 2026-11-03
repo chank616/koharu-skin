@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>安装 Koharu Skin</title><link rel="stylesheet" th:href="@{/app/style.css}">
+</head>
+<body class="hold-transition register-page">
+<main class="register-box">
+    <div class="register-logo">Koharu Skin</div>
+    <div class="card"><div class="card-body">
+        <h1 class="h5">创建站点管理员</h1>
+        <p class="text-muted">完成设置后即可登录管理后台。外置登录默认开启，可在官方扩展中调整。</p>
+        <form method="post" th:action="@{/setup}" th:object="${form}">
+            <ul class="alert alert-danger pl-4" th:if="${#fields.hasAnyErrors()}"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
+            <div class="form-group"><label for="siteName">站点名称</label><input class="form-control" id="siteName" th:field="*{siteName}" required maxlength="100"></div>
+            <div class="form-group"><label for="email">管理员邮箱</label><input class="form-control" type="email" id="email" th:field="*{email}" required maxlength="100" autocomplete="email"></div>
+            <div class="form-group"><label for="nickname">昵称</label><input class="form-control" id="nickname" th:field="*{nickname}" required maxlength="50" autocomplete="nickname"></div>
+            <div class="form-group"><label for="password">密码</label><input class="form-control" type="password" id="password" name="password" required minlength="8" maxlength="32" autocomplete="new-password"></div>
+            <div class="form-group"><label for="confirmation">确认密码</label><input class="form-control" type="password" id="confirmation" name="confirmation" required minlength="8" maxlength="32" autocomplete="new-password"></div>
+            <button class="btn btn-primary btn-block" type="submit">完成安装</button>
+        </form>
+    </div></div>
+</main>
+</body>
+</html>
